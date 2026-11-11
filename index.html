@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101014">
+<title>Расписание С-12</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg: #101014;
+    --panel: #19191f;
+    --panel2: #202027;
+    --border: rgba(255,255,255,.08);
+    --text: #f5f5f7;
+    --muted: #92929e;
+    --red: #ff424f;
+    --red2: #c91f36;
+    --red-soft: rgba(255,66,79,.12);
+    --green: #a5e6c1;
+    --radius: 20px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Manrope', Arial, sans-serif;
+    background:
+        radial-gradient(ellipse at 85% 0%, rgba(255,66,79,.13), transparent 35%),
+        var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+button, a {
+    font: inherit;
+}
+
+.container {
+    width: min(1100px, 92%);
+    margin: auto;
+    padding: 30px 0 45px;
+}
+
+/* HEADER */
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 45px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.logo-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--red), var(--red2));
+    box-shadow: 0 6px 25px rgba(255,66,79,.25);
+    font-size: 19px;
+}
+
+.logo span {
+    color: var(--red);
+}
+
+.header-year {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+/* HERO */
+
+.hero {
+    position: relative;
+    overflow: hidden;
+    padding: 35px;
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    background:
+        linear-gradient(120deg, rgba(255,66,79,.13), transparent 60%),
+        var(--panel);
+    margin-bottom: 25px;
+}
+
+.hero::after {
+    content: "С-12";
+    position: absolute;
+    right: 15px;
+    bottom: -42px;
+    font-size: 150px;
+    font-weight: 800;
+    color: rgba(255,255,255,.025);
+    pointer-events: none;
+}
+
+.hero-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ff858d;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+}
+
+.hero-label::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 12px var(--red);
+}
+
+.hero h1 {
+    font-size: clamp(30px, 6vw, 48px);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -2px;
+    margin-bottom: 12px;
+}
+
+.hero h1 span {
+    color: var(--red);
+}
+
+.hero p {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* CONTROLS */
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 35px;
+}
+
+.week-switch {
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.week-switch button {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .25s;
+}
+
+.week-switch button.active {
+    color: white;
+    background: var(--red);
+    box-shadow: 0 4px 18px rgba(255,66,79,.2);
+}
+
+.replace-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 13px 20px;
+    color: white;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    transition: .25s;
+}
+
+.replace-button:hover {
+    background: var(--red);
+    border-color: var(--red);
+    transform: translateY(-2px);
+}
+
+/* SECTION */
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin: 38px 0 18px;
+}
+
+.section-heading h2 {
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.section-heading span {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+/* BELLS */
+
+.bells {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.bell {
+    position: relative;
+    overflow: hidden;
+    padding: 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 17px;
+    transition: .25s;
+}
+
+.bell:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,.2);
+}
+
+.bell-label {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.bell-time {
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.bell.lunch {
+    background: var(--red-soft);
+    border-color: rgba(255,66,79,.3);
+}
+
+.bell.lunch .bell-label {
+    color: #ff858d;
+}
+
+.bell.lunch .bell-time {
+    color: #ff858d;
+}
+
+/* DAYS */
+
+.days {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.day-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    min-width: 0;
+    transition: .25s;
+    animation: appear .4s ease both;
+}
+
+.day-card:hover {
+    border-color: rgba(255,66,79,.3);
+    transform: translateY(-3px);
+}
+
+@keyframes appear {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+}
+
+.day-header h3 {
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.day-number {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    color: #ff858d;
+    background: var(--red-soft);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* LESSONS */
+
+.lesson {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.lesson:last-child {
+    border-bottom: none;
+    padding-bottom: 2px;
+}
+
+.lesson-number {
+    flex-shrink: 0;
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    color: #ff858d;
+    background: var(--red-soft);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.lesson-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.lesson-name {
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.5;
+    margin-bottom: 7px;
+}
+
+.lesson-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.lesson-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    background: var(--panel2);
+    border-radius: 9px;
+}
+
+.teacher {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.room {
+    color: #ff858d;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.empty {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 18px 0;
+}
+
+/* FOOTER */
+
+footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 45px;
+    padding-top: 25px;
+    border-top: 1px solid var(--border);
+    color: #656571;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+footer span {
+    color: var(--red);
+}
+
+/* MOBILE */
+
+@media (max-width: 850px) {
+    .days {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .bells {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .container {
+        width: 92%;
+        padding-top: 20px;
+    }
+
+    header {
+        margin-bottom: 28px;
+    }
+
+    .logo {
+        font-size: 13px;
+    }
+
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .header-year {
+        font-size: 9px;
+        letter-spacing: .5px;
+    }
+
+    .hero {
+        padding: 25px 20px;
+        border-radius: 20px;
+    }
+
+    .hero h1 {
+        letter-spacing: -1px;
+    }
+
+    .hero p {
+        font-size: 12px;
+    }
+
+    .hero::after {
+        font-size: 100px;
+        bottom: -20px;
+    }
+
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .week-switch {
+        width: 100%;
+    }
+
+    .week-switch button {
+        flex: 1;
+        padding: 12px 5px;
+        font-size: 11px;
+    }
+
+    .replace-button {
+        width: 100%;
+    }
+
+    .bells {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 9px;
+    }
+
+    .bell {
+        padding: 14px;
+    }
+
+    .bell:last-child {
+        grid-column: span 2;
+    }
+
+    .bell-time {
+        font-size: 14px;
+    }
+
+    .days {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .day-card {
+        padding: 18px;
+    }
+
+    .section-heading h2 {
+        font-size: 18px;
+    }
+
+    .section-heading span {
+        font-size: 8px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <div class="logo">
+        <div class="logo-icon">✦</div>
+        <div>РАСПИСАНИЕ <span>С-12</span></div>
+    </div>
+
+    <div class="header-year">2026 — 2027</div>
+</header>
+
+<section class="hero">
+    <div class="hero-label">УЧЕБНЫЙ ПОРТАЛ</div>
+    <h1>Твоё расписание<br><span>на неделю.</span></h1>
+    <p>Все занятия группы С-12 в одном месте.</p>
+</section>
+
+<div class="controls">
+
+    <div class="week-switch">
+        <button id="whiteBtn" onclick="setWeek('white')">
+            Белая неделя
+        </button>
+
+        <button id="redBtn" onclick="setWeek('red')">
+            Красная неделя
+        </button>
+    </div>
+
+    <a class="replace-button"
+       href="https://bask-rb.ru/%d0%b7%d0%b0%d0%bc%d0%b5%d0%bd%d1%8b"
+       target="_blank"
+       rel="noopener noreferrer">
+        📢 Замены <span>↗</span>
+    </a>
+
+</div>
+
+<div class="section-heading">
+    <h2>Расписание звонков</h2>
+    <span>ВРЕМЯ ЗАНЯТИЙ</span>
+</div>
+
+<section class="bells">
+
+    <div class="bell">
+        <div class="bell-label">1-я пара</div>
+        <div class="bell-time">08:30–10:00</div>
+    </div>
+
+    <div class="bell">
+        <div class="bell-label">2-я пара</div>
+        <div class="bell-time">10:10–11:40</div>
+    </div>
+
+    <div class="bell lunch">
+        <div class="bell-label">Обед</div>
+        <div class="bell-time">11:40–12:30</div>
+    </div>
+
+    <div class="bell">
+        <div class="bell-label">3-я пара</div>
+        <div class="bell-time">12:30–13:50</div>
+    </div>
+
+    <div class="bell">
+        <div class="bell-label">4-я пара</div>
+        <div class="bell-time">14:10–15:30</div>
+    </div>
+
+</section>
+
+<div class="section-heading">
+    <h2 id="scheduleTitle">Белая неделя</h2>
+    <span>ГРУППА С-12</span>
+</div>
+
+<section class="days" id="days"></section>
+
+<footer>
+    DESIGNED & BUILT BY <span>SKYROCKETED</span>
+</footer>
+
+</div>
+
+<script>
+
+const schedule = {
+
+white: [
+
+{
+    day: "Понедельник",
+    lessons: [
+        ["Русский язык", "Ионова", "34"],
+        ["Математика", "Кислухина", "38"],
+        ["География", "Залесова", "29"],
+        ["Физика", "Алеева", "28"]
+    ]
+},
+
+{
+    day: "Вторник",
+    lessons: [
+        ["Математика", "Кислухина", "38"],
+        ["Биология", "Мацевич", "76"],
+        ["Информатика", "Самусенко", "66"],
+        ["Информатика", "Новикова", "44"],
+        ["Литература", "Ионова", "34"]
+    ]
+},
+
+{
+    day: "Среда",
+    lessons: [
+        ["Физика", "Алеева", "28"],
+        ["Физкультура", "Жаров", "с/з"]
+    ]
+},
+
+{
+    day: "Четверг",
+    lessons: [
+        ["Химия", "Мацевич", "76"],
+        ["Английский язык", "Нигматуллина", "82б"],
+        ["Английский язык", "Искакова", "72б"],
+        ["История", "Середа", "39"]
+    ]
+},
+
+{
+    day: "Пятница",
+    lessons: [
+        ["Физика", "Алеева", "28"],
+        ["История", "Середа", "73"],
+        ["Математика", "Кислухина", "38"]
+    ]
+},
+
+{
+    day: "Суббота",
+    lessons: [
+        ["Башкирский язык", "Харисова", "35"]
+    ]
+}
+
+],
+
+red: [
+
+{
+    day: "Понедельник",
+    lessons: [
+        ["Русский язык", "Ионова", "34"],
+        ["Математика", "Кислухина", "38"],
+        ["География", "Залесова", "29"]
+    ]
+},
+
+{
+    day: "Вторник",
+    lessons: [
+        ["Математика", "Кислухина", "38"],
+        ["Биология", "Мацевич", "76"],
+        ["Информатика", "Самусенко", "66"],
+        ["Информатика", "Новикова", "44"],
+        ["Литература", "Ионова", "34"]
+    ]
+},
+
+{
+    day: "Среда",
+    lessons: [
+        ["Физика", "Алеева", "28"],
+        ["Физкультура", "Жаров", "с/з"]
+    ]
+},
+
+{
+    day: "Четверг",
+    lessons: [
+        ["Химия", "Мацевич", "76"],
+        ["Английский язык", "Нигматуллина", "82б"],
+        ["Английский язык", "Искакова", "72б"],
+        ["История", "Середа", "39"]
+    ]
+},
+
+{
+    day: "Пятница",
+    lessons: [
+        ["Физика", "Алеева", "28"],
+        ["Литература", "Ионова", "34"],
+        ["Математика", "Кислухина", "38"]
+    ]
+},
+
+{
+    day: "Суббота",
+    lessons: [
+        ["Башкирский язык", "Харисова", "35"],
+        ["Информатика", "Самусенко", "66"]
+    ]
+}
+
+]
+
+};
+
+let currentWeek = "white";
+
+
+function renderSchedule() {
+
+    const container = document.getElementById("days");
+
+    document.getElementById("whiteBtn")
+        .classList.toggle("active", currentWeek === "white");
+
+    document.getElementById("redBtn")
+        .classList.toggle("active", currentWeek === "red");
+
+    document.getElementById("scheduleTitle").textContent =
+        currentWeek === "white"
+        ? "Белая неделя"
+        : "Красная неделя";
+
+    container.innerHTML = "";
+
+    schedule[currentWeek].forEach((day, index) => {
+
+        let lessonsHTML = "";
+        let groupedLessons = [];
+
+        // Объединяем параллельные занятия одного предмета.
+        // Например, две информатики или два английских.
+
+        day.lessons.forEach(lesson => {
+
+            const subject = lesson[0];
+            const teacher = lesson[1];
+            const room = lesson[2];
+
+            const lastLesson =
+                groupedLessons[groupedLessons.length - 1];
+
+            if (lastLesson && lastLesson.subject === subject) {
+
+                lastLesson.groups.push({
+                    teacher: teacher,
+                    room: room
+                });
+
+            } else {
+
+                groupedLessons.push({
+                    subject: subject,
+                    groups: [{
+                        teacher: teacher,
+                        room: room
+                    }]
+                });
+
+            }
+
+        });
+
+
+        // Нумерация уже объединённых пар.
+
+        groupedLessons.forEach((lesson, i) => {
+
+            const groupsHTML = lesson.groups.map(group => `
+                <div class="lesson-group">
+                    <span class="teacher">${group.teacher}</span>
+                    <span class="room">КАБ. ${group.room}</span>
+                </div>
+            `).join("");
+
+            lessonsHTML += `
+                <div class="lesson">
+
+                    <div class="lesson-number">
+                        ${i + 1}
+                    </div>
+
+                    <div class="lesson-content">
+
+                        <div class="lesson-name">
+                            ${lesson.subject}
+                        </div>
+
+                        <div class="lesson-groups">
+                            ${groupsHTML}
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+
+        });
+
+
+        container.innerHTML += `
+            <article class="day-card">
+
+                <div class="day-header">
+                    <h3>${day.day}</h3>
+
+                    <span class="day-number">
+                        ${(index + 1).toString().padStart(2, "0")}
+                    </span>
+                </div>
+
+                ${lessonsHTML || '<div class="empty">Занятий нет</div>'}
+
+            </article>
+        `;
+
+    });
+
+}
+
+
+function setWeek(week) {
+    currentWeek = week;
+    renderSchedule();
+}
+
+
+// Автоматическое чередование недель.
+// 9 ноября 2026 года — начало белой недели.
+
+const anchor = new Date(2026, 10, 9);
+
+const now = new Date();
+
+const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+);
+
+const difference = Math.floor(
+    (today - anchor) / 86400000
+);
+
+const weekNumber = Math.floor(difference / 7);
+
+currentWeek = ((weekNumber % 2 + 2) % 2 === 0)
+    ? "white"
+    : "red";
+
+renderSchedule();
+
+</script>
+
+</body>
+</html>
