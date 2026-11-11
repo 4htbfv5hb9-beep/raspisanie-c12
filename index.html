@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расписание С-12</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101116;color:#fff;
+ font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+ padding:24px 16px 40px;
+}
+header{display:flex;justify-content:space-between;align-items:center}
+h1{font-size:27px;margin:8px 0}
+.sub{color:#9295a3;font-size:14px}
+.week{
+ margin:24px 0 18px;padding:16px;border-radius:18px;
+ background:#20222c;display:flex;justify-content:space-between;
+ align-items:center
+}
+.week strong{font-size:16px}
+.week button{
+ background:#343744;color:white;border:0;border-radius:12px;
+ padding:10px 14px;font-size:14px
+}
+.days{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px}
+.days button{
+ flex:1;min-width:44px;padding:12px 8px;border:0;
+ border-radius:12px;background:#22242e;color:#aeb0bc;
+ font-weight:700
+}
+.days button.active{background:#e33c49;color:white}
+#schedule{margin-top:22px}
+.lesson{
+ background:#20222c;border:1px solid #30323d;
+ border-radius:17px;padding:17px;margin-bottom:12px;
+ animation:appear .25s ease
+}
+@keyframes appear{
+ from{opacity:0;transform:translateY(8px)}
+ to{opacity:1;transform:translateY(0)}
+}
+.time{color:#a3a6b5;font-size:13px;margin-bottom:9px}
+.subject{font-size:18px;font-weight:700;margin-bottom:8px}
+.info{font-size:14px;color:#aeb0bc;line-height:1.6}
+.tag{
+ display:inline-block;margin-top:10px;padding:5px 9px;
+ border-radius:8px;background:#353744;font-size:12px
+}
+.empty{color:#999;text-align:center;padding:35px 10px}
+footer{text-align:center;color:#686b78;font-size:12px;margin-top:35px}
+</style>
+</head>
+<body>
+<header>
+ <div>
+  <div class="sub">УЧЕБНАЯ ГРУППА</div>
+  <h1>Расписание С-12</h1>
+  <div class="sub">BACK • Уфа</div>
+ </div>
+ <div style="font-size:27px">📚</div>
+</header>
+
+<div class="week">
+ <div>
+  <div class="sub">ТЕКУЩАЯ НЕДЕЛЯ</div>
+  <strong id="weekName">Белая неделя</strong>
+ </div>
+ <button onclick="toggleWeek()">Сменить</button>
+</div>
+
+<div class="days" id="days"></div>
+<div id="schedule"></div>
+<footer>РАСПИСАНИЕ С-12 · 2026</footer>
+
+<script>
+const dayNames=["ПН","ВТ","СР","ЧТ","ПТ","СБ"];
+const fullNames=["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
+
+const times=[
+ "08:30–10:00","10:10–11:40","12:30–13:50",
+ "14:10–15:30","15:40–17:00","17:20–18:40",
+ "18:50–20:10"
+];
+
+const schedule={
+ 0:[
+  ["Русский язык","Ионова Э.В.","34"],
+  ["Математика","Кислухина Т.В.","38"],
+  ["География","Залесова","29"],
+  ["Физика","Алеева Р.Р.","28"]
+ ],
+ 1:[
+  ["Математика","Кислухина Т.В.","38"],
+  ["Биология","Мацевич В.А.","76"],
+  ["Информатика","Самусенко С.А. / Новикова Т.В.","66 / 44"],
+  ["Литература","Ионова Э.В.","34"]
+ ],
+ 2:[
+  ["Физика","Алеева Р.Р.","28"],
+  ["Физическая культура","Жаров В.А.","Спортзал"]
+ ],
+ 3:[
+  ["Химия","Мацевич В.А.","76"],
+  ["Английский язык","Нигматуллина / Искакова","826 / 726"],
+  ["История","Середа С.Н.","39"]
+ ],
+ 4:[
+  ["Физика","Алеева Р.Р.","28"],
+  ["Литература / История","Ионова Э.В. / Середа С.Н.","34 / 73"],
+  ["Математика","Кислухина Т.В.","38"]
+ ],
+ 5:[
+  ["Башкирский язык","Харисова Р.Х.","35"],
+  ["Информатика","Самусенко С.А. / Новикова Т.В.","66 / 44"],
+  ["Обществознание","Уточняется","32"]
+ ]
+};
+
+let selectedDay=0;
+let whiteWeek=true;
+let manualWeek=false;
+
+function getWhiteWeek(){
+ const start=new Date(2026,10,9);
+ const now=new Date();
+ const monday=new Date(now);
+ monday.setHours(0,0,0,0);
+ monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
+ const diff=Math.round((monday-start)/604800000);
+ return ((diff%2)+2)%2===0;
+}
+
+function toggleWeek(){
+ whiteWeek=!whiteWeek;
+ manualWeek=true;
+ render();
+}
+
+function render(){
+ document.getElementById("weekName").textContent=
+ whiteWeek?"Белая неделя":"Красная неделя";
+
+ document.getElementById("days").innerHTML=dayNames.map((d,i)=>
+ `<button class="${i===selectedDay?'active':''}" onclick="selectedDay=${i};render()">${d}</button>`
+ ).join("");
+
+ const lessons=schedule[selectedDay]||[];
+ document.getElementById("schedule").innerHTML=
+ `<h2>${fullNames[selectedDay]}</h2>`+
+ lessons.map((lesson,i)=>`
+ <div class="lesson">
+  <div class="time">${selectedDay===5&&i===0?"08:30–09:50":
+  selectedDay===5&&i===1?"10:00–11:20":times[i]||"Время уточняется"}</div>
+  <div class="subject">${lesson[0]}</div>
+  <div class="info">Преподаватель: ${lesson[1]}<br>Кабинет: ${lesson[2]}</div>
+ </div>`).join("");
+}
+
+whiteWeek=getWhiteWeek();
+render();
+</script>
+</body>
+</html>
