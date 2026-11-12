@@ -1,5 +1,5 @@
 import base64
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
 import logging
@@ -143,7 +143,7 @@ def duty_student(target: date) -> str | None:
 
 
 def group_list_message(target: date | None = None) -> str:
-    target = target or date.today()
+    target = target or datetime.now(timezone(timedelta(hours=5))).date()
     duty = duty_student(target)
     lines = ["📋 Список группы С-12", ""]
     for index, student in enumerate(GROUP_STUDENTS, start=1):
