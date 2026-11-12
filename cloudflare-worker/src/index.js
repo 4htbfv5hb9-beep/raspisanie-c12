@@ -315,6 +315,7 @@ export default {
         await env.C12_DATA.put("c12:games", JSON.stringify(data));
         return json({ ok: true, student }, 200, origin);
       }
+      if (body.action === "whoami") return json({ ok: true, student: profile || null }, 200, origin);
       if (!profile) return json({ error: "Сначала выбери своё имя" }, 403, origin);
       if (body.action === "score") {
         const limits = { memory: 60, darts: 100, karate: 100 };
