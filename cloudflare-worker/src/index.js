@@ -257,3 +257,5 @@ export default {
     return json({ success: true, updatedAt: saved.updatedAt }, 200, origin);
   }
 };
+
+// Trigger Cloudflare Workers Git deployment.
