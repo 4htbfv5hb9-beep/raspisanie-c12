@@ -1,6 +1,7 @@
 const ADMIN_TELEGRAM_ID = 924301242;
 const STATE_KEY = "c12:shared-state";
 const SUBSCRIBERS_KEY = "c12:subscribers";
+const C33_SUBSCRIBERS_KEY = "c33:subscribers";
 const MAX_INIT_DATA_AGE_SECONDS = 300;
 const MAX_BODY_BYTES = 100_000;
 
@@ -188,6 +189,15 @@ async function handleTelegramUpdate(update, env) {
       "📢 Смотреть актуальные замены.\n\n" +
       "Всё необходимое для учёбы — в одном месте.",
       "Markdown");
+  } else if (command === "/start33") {
+    const subscribers = await env.C12_DATA.get(C33_SUBSCRIBERS_KEY, "json") || [];
+    if (!subscribers.includes(chatId)) subscribers.push(chatId);
+    await env.C12_DATA.put(C33_SUBSCRIBERS_KEY, JSON.stringify(subscribers));
+    await sendText(env, chatId, "🔔 Ты подписан(а) на уведомления С-33. Для отключения отправь /stop33.");
+  } else if (command === "/stop33") {
+    const subscribers = await env.C12_DATA.get(C33_SUBSCRIBERS_KEY, "json") || [];
+    await env.C12_DATA.put(C33_SUBSCRIBERS_KEY, JSON.stringify(subscribers.filter(id => id !== chatId)));
+    await sendText(env, chatId, "Уведомления С-33 отключены. Для подписки снова отправь /start33.");
   } else if (command === "/stop") {
     const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
     await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers.filter(id => id !== chatId)));
@@ -251,7 +261,10 @@ export default {
           if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 4000) {
             return json({ ok: false, error: "Invalid message" }, 400, origin);
           }
-          const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
+          const group = body.group || "C12";
+          if (group !== "C12" && group !== "C33") return json({ ok: false, error: "Invalid group" }, 400, origin);
+          const key = group === "C33" ? C33_SUBSCRIBERS_KEY : SUBSCRIBERS_KEY;
+          const subscribers = await env.C12_DATA.get(key, "json") || [];
           let sent = 0;
           for (const chatId of subscribers) {
             try { await sendText(env, chatId, body.text); sent++; }
