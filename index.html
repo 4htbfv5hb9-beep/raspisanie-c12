@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#101014">\n<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="theme-color" content="#101014">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Расписание С-12</title>
 
 <style>
@@ -2012,8 +2013,10 @@ function spinWheel(){
  const winner=Math.floor(Math.random()*groupStudents.length);
  const step=360/groupStudents.length;
  const center=winner*step+step/2;
- const target=((360-center)%360)+360*6;
- wheelRotation+=target;
+ const current=((wheelRotation%360)+360)%360;
+ const desired=((360-center)%360+360)%360;
+ const delta=((desired-current)%360+360)%360;
+ wheelRotation+=360*6+delta;
  canvas.style.transform="rotate("+wheelRotation+"deg)";
  const done=()=>{
   result.textContent="🎉 Сегодня доску моет: "+groupStudents[winner]+"!";
