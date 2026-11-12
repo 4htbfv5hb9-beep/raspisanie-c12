@@ -322,8 +322,8 @@ def check_replacements(state: dict) -> None:
                 logger.info("Сохранён начальный снимок замен %s; старые изменения не рассылаются", group)
             elif previous != current:
                 message = (
-                    f"📢 Изменения в заменах группы {group}!\\n\\n"
-                    f"{current}\\n\\nИсточник: {source_url}"
+                    f"📢 Изменения в заменах группы {group}!\n\n"
+                    f"{current}\n\nИсточник: {source_url}"
                 )
                 notify_subscribers(message, state, group_code)
                 state[snapshot_key] = current
