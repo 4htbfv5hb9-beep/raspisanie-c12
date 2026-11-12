@@ -33,6 +33,8 @@ jobs:
       - name: Process Telegram updates and check replacements
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          WORKER_URL: https://c12-schedule-api.4htbfv5hb9.workers.dev
+          WEBHOOK_MODE: ${{ vars.WEBHOOK_MODE }}
         run: python actions_runner.py
 
       - name: Save encrypted bot state
