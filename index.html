@@ -1106,6 +1106,33 @@ footer span {
     <h1>Расписание <span style="color:var(--red)">С-33</span></h1>
     <p>Занятия по дням недели · с учётом подгрупп и чередования недель</p>
   </section>
+  <section class="live-panel" aria-live="polite">
+    <div class="live-clock">
+      <div class="live-caption">ТЕКУЩЕЕ ВРЕМЯ · УФА</div>
+      <div class="live-time" id="c33Clock">--:--:--</div>
+      <div class="live-date" id="c33Date">Загружаем дату…</div>
+      <div class="live-zone">Часовой пояс: Уфа (UTC+5)</div>
+    </div>
+    <div class="live-lesson">
+      <div class="live-caption">ЧТО СЕЙЧАС ПО РАСПИСАНИЮ</div>
+      <div class="live-status off" id="c33LessonStatus">ПРОВЕРЯЕМ</div>
+      <div class="live-subject" id="c33CurrentLesson">Определяем пару…</div>
+      <div class="live-meta" id="c33LessonMeta">Группа С-33</div>
+      <div class="live-countdown" id="c33LessonCountdown"></div>
+    </div>
+  </section>
+  <div class="section-heading"><h2>Расписание звонков</h2><span>ГРУППА С-33</span></div>
+  <section class="bells">
+    <div class="bell"><div class="bell-label">1-я пара</div><div class="bell-time">08:30–10:00</div></div>
+    <div class="bell"><div class="bell-label">2-я пара</div><div class="bell-time">10:10–11:40</div></div>
+    <div class="bell lunch"><div class="bell-label">Обед</div><div class="bell-time">11:40–12:30</div></div>
+    <div class="bell"><div class="bell-label">3-я пара</div><div class="bell-time">12:30–13:50</div></div>
+    <div class="bell"><div class="bell-label">4-я пара</div><div class="bell-time">14:10–15:30</div></div>
+    <div class="bell"><div class="bell-label">5-я пара</div><div class="bell-time">15:40–17:00</div></div>
+    <div class="bell lunch"><div class="bell-label">Перерыв / обед</div><div class="bell-time">17:00–17:20</div></div>
+    <div class="bell"><div class="bell-label">6-я пара</div><div class="bell-time">17:20–18:40</div></div>
+    <div class="bell"><div class="bell-label">7-я пара</div><div class="bell-time">18:50–20:10</div></div>
+  </section>
   <div class="controls" style="margin:0 0 18px">
     <div class="week-switch">
       <button id="c33WhiteBtn" class="active" type="button" onclick="setC33Week('white')">Белая неделя</button>
@@ -1695,6 +1722,7 @@ renderSchedule();
 renderCalendar();
 updatePermDashboard();
 setInterval(updatePermDashboard, 1000);
+setInterval(updateC33Dashboard, 1000);
 
 
 
@@ -1770,6 +1798,43 @@ function karateMove(action){
 }
 
 
+const c33BellTimes = [
+ {pair:1,start:"08:30",end:"10:00"},
+ {pair:2,start:"10:10",end:"11:40"},
+ {pair:3,start:"12:30",end:"13:50"},
+ {pair:4,start:"14:10",end:"15:30"},
+ {pair:5,start:"15:40",end:"17:00"},
+ {pair:6,start:"17:20",end:"18:40"},
+ {pair:7,start:"18:50",end:"20:10"}
+];
+function updateC33Dashboard(){
+ const p=permNowParts(),hour=Number(p.hour),minute=Number(p.minute),second=Number(p.second);
+ const now=hour*60+minute,clock=document.getElementById("c33Clock");
+ if(!clock)return;
+ clock.textContent=String(hour).padStart(2,"0")+":"+String(minute).padStart(2,"0")+":"+String(second).padStart(2,"0");
+ const date=new Date(Number(p.year),Number(p.month)-1,Number(p.day));
+ document.getElementById("c33Date").textContent=new Intl.DateTimeFormat("ru-RU",{timeZone:PERM_TZ,weekday:"long",day:"numeric",month:"long"}).format(date);
+ const status=document.getElementById("c33LessonStatus"),subject=document.getElementById("c33CurrentLesson"),meta=document.getElementById("c33LessonMeta"),count=document.getElementById("c33LessonCountdown");
+ const weekday=({monday:0,tuesday:1,wednesday:2,thursday:3,friday:4,saturday:5})[p.weekday.toLowerCase()];
+ if(weekday===undefined){status.className="live-status off";status.textContent="ВЫХОДНОЙ";subject.textContent="Сегодня занятий нет";meta.textContent="Хорошего отдыха!";count.textContent="";return;}
+ const day=c33Schedule[weekday];
+ const visible=day.lessons.filter(l=>l.details.some(d=>d[0].includes("Обе")||(!d[0].includes("Красная")&&!d[0].includes("Белая"))||(d[0].includes("Красная")&&c33CurrentWeek==="red")||(d[0].includes("Белая")&&c33CurrentWeek==="white")));
+ const active=c33BellTimes.find(t=>now>=clockMinutes(t.start)&&now<clockMinutes(t.end));
+ const next=c33BellTimes.find(t=>now<clockMinutes(t.start)&&visible.some(l=>l.pair===t.pair));
+ const breakEnd=({"10:00":"10:10","11:40":"12:30","13:50":"14:10","15:30":"15:40","17:00":"17:20","18:40":"18:50"}) ;
+ const breaks=[["10:00","10:10","ПЕРЕМЕНА"],["11:40","12:30","ОБЕД"],["13:50","14:10","ПЕРЕМЕНА"],["15:30","15:40","ПЕРЕМЕНА"],["17:00","17:20","ПЕРЕРЫВ / ОБЕД"],["18:40","18:50","ПЕРЕМЕНА"]];
+ const pause=breaks.find(x=>now>=clockMinutes(x[0])&&now<clockMinutes(x[1]));
+ if(active){
+  const lesson=visible.find(l=>l.pair===active.pair),remaining=(clockMinutes(active.end)-now)*60-second;
+  if(lesson){status.className="live-status";status.textContent=active.pair+"-Я ПАРА ИДЁТ";subject.textContent=lesson.subject;meta.textContent="Пара "+active.start+"–"+active.end+" · "+day.day;count.textContent="До конца пары: "+formatRemaining(remaining);}
+  else{status.className="live-status waiting";status.textContent="ОКНО";subject.textContent="По расписанию пары нет";meta.textContent=active.pair+"-я пара · "+active.start+"–"+active.end;count.textContent="До конца времени пары: "+formatRemaining(remaining);}
+  return;
+ }
+ if(pause){status.className="live-status waiting";status.textContent=pause[2];subject.textContent=pause[2]==="ОБЕД"?"Время обеда":"Перерыв между парами";meta.textContent=pause[0]+"–"+pause[1];count.textContent="До конца перерыва: "+formatRemaining((clockMinutes(pause[1])-now)*60-second);return;}
+ if(next){status.className="live-status waiting";status.textContent="ПЕРЕРЫВ";subject.textContent="Следующая: "+visible.find(l=>l.pair===next.pair).subject;meta.textContent=next.pair+"-я пара · начало в "+next.start;count.textContent="До начала: "+formatRemaining((clockMinutes(next.start)-now)*60-second);return;}
+ status.className="live-status off";status.textContent="ЗАНЯТИЯ ЗАВЕРШЕНЫ";subject.textContent="На сегодня всё!";meta.textContent="Расписание на "+day.day.toLowerCase()+" закончено";count.textContent="";
+}
+
 let c33CurrentWeek = "white";
 const c33Schedule = [
  {day:"Понедельник",lessons:[
@@ -1812,6 +1877,7 @@ function setC33Week(week){
  document.getElementById("c33RedBtn").classList.toggle("active",week==="red");
  document.getElementById("c33WeekTitle").textContent=week==="white"?"Белая неделя":"Красная неделя";
  renderC33Schedule();
+ updateC33Dashboard();
 }
 function renderC33Schedule(){
  const root=document.getElementById("c33Days");
@@ -1832,11 +1898,12 @@ function renderC33Schedule(){
  }).join('');
 }
 function openGroupC33(){
+ c33CurrentWeek=currentWeek;
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
  document.getElementById("c12App").classList.add("group-hidden");
  document.getElementById("c33App").classList.remove("group-hidden");
- renderC33Schedule();window.scrollTo(0,0);
+ renderC33Schedule();updateC33Dashboard();window.scrollTo(0,0);
 }
 
 function openGroupC12(){
