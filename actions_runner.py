@@ -16,7 +16,7 @@ from cryptography.fernet import Fernet, InvalidToken
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 STATE_PATH = Path("data/state.enc")
 REPLACEMENTS_URL = "https://bask-rb.ru/%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D1%8B"
-CHECK_INTERVAL_SECONDS = 90 * 60
+CHECK_INTERVAL_SECONDS = 5 * 60
 MAX_TELEGRAM_TEXT = 4000
 
 logging.basicConfig(
@@ -124,6 +124,7 @@ def process_updates(state: dict) -> None:
             "limit": 100,
         },
     )
+    logger.info("Получено обновлений Telegram: %d", len(updates))
     for update in updates:
         state["offset"] = update["update_id"] + 1
         message = update.get("message") or {}
@@ -134,6 +135,7 @@ def process_updates(state: dict) -> None:
         command = text.split()[0].split("@")[0] if text else ""
         chat_id = int(chat["id"])
 
+        logger.info("Получена команда %s в личном чате", command or "(пустое сообщение)")
         if command == "/start":
             if chat_id not in state["subscribers"]:
                 state["subscribers"].append(chat_id)
