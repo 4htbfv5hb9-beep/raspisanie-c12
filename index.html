@@ -1084,6 +1084,7 @@ red: [
 
 let currentWeek = "white";
 
+const PERM_TZ = "Asia/Yekaterinburg";
 const calendarWeekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const calendarTodayParts = permNowParts();
 let selectedCalendarDate = calendarTodayParts.year + "-" + calendarTodayParts.month + "-" + calendarTodayParts.day;
@@ -1191,7 +1192,7 @@ function shiftCalendarMonth(delta) {
 }
 
 
-const PERM_TZ = "Asia/Yekaterinburg";
+
 const bellTimes = [
     { start: "08:30", end: "10:00" },
     { start: "10:10", end: "11:40" },
