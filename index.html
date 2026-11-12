@@ -926,6 +926,12 @@ footer span {
   <h2>СКОРО</h2>
   <p>Расписание группы С-33 скоро появится здесь.</p>
 </section>
+<section class="soon-view group-hidden" id="newGroupView">
+  <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
+  <div style="font-size:48px">➕</div>
+  <h2>Новая группа</h2>
+  <p>Чтобы добавить новую группу в приложение, напишите <a href="https://t.me/skwwwv" target="_blank" rel="noopener noreferrer" style="color:#ff858d;font-weight:800">@skwwwv</a>.</p>
+</section>
 <div class="container group-hidden" id="c12App">
 
 <button class="group-back" type="button" onclick="backToGroups()">← ВЫБРАТЬ ГРУППУ</button>
@@ -1926,6 +1932,12 @@ function openGroupC12(){
  document.getElementById("soonView").classList.add("group-hidden");
  document.getElementById("c33App").classList.add("group-hidden");
  document.getElementById("c12App").classList.remove("group-hidden");
+ window.scrollTo(0,0);
+}
+function showNewGroupRequest(){
+ document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("soonView").classList.add("group-hidden");
+ document.getElementById("newGroupView").classList.remove("group-hidden");
  window.scrollTo(0,0);
 }
 function showComingSoon(){
