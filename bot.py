@@ -173,14 +173,14 @@ def fetch_group_replacements() -> str:
 
     soup = BeautifulSoup(html, "html.parser")
     lines = [
-        re.sub(r"\\s+", " ", line).strip()
-        for line in soup.get_text("\\n").replace("\\xa0", " ").splitlines()
+        re.sub(r"\s+", " ", line).strip()
+        for line in soup.get_text("\n").replace("\xa0", " ").splitlines()
     ]
     lines = [line for line in lines if line]
 
     start = None
     for index, line in enumerate(lines):
-        if re.match(r"^С[-‑–]12(?:\\s|\\||$)", line, re.IGNORECASE):
+        if re.match(r"^С[-‑–]12(?:\s|\||$)", line, re.IGNORECASE):
             start = index
             break
 
@@ -189,7 +189,7 @@ def fetch_group_replacements() -> str:
 
     section = [lines[start]]
     group_pattern = re.compile(
-        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\\d{2}(?:\\s|\\||$)",
+        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\d{2}(?:\s|\||$)",
         re.IGNORECASE,
     )
     for line in lines[start + 1:]:
@@ -197,7 +197,7 @@ def fetch_group_replacements() -> str:
             break
         section.append(line)
 
-    return "\\n".join(section)
+    return "\n".join(section)
 
 
 async def check_replacements(application: Application) -> None:
@@ -231,8 +231,8 @@ async def check_replacements(application: Application) -> None:
             db.commit()
 
         message = (
-            "📢 Изменения в заменах группы С-12!\\n\\n"
-            f"{current}\\n\\nИсточник: {REPLACEMENTS_URL}"
+            "📢 Изменения в заменах группы С-12!\n\n"
+            f"{current}\n\nИсточник: {REPLACEMENTS_URL}"
         )
         await send_to_subscribers(application, message)
     except Exception:
