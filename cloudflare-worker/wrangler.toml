@@ -1,3 +1,7 @@
 name = "c12-schedule-api"
 main = "src/index.js"
 compatibility_date = "2026-11-12"
+
+[[kv_namespaces]]
+binding = "C12_DATA"
+id = "90fb80fdf61e467b82c9f10fd1b21dac"
