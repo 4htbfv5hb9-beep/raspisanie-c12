@@ -1,8 +1,13 @@
+import asyncio
 import logging
 import os
+import re
 import sqlite3
+import urllib.request
 from contextlib import closing
 from pathlib import Path
+
+from bs4 import BeautifulSoup
 
 from telegram import Update
 from telegram.error import Forbidden, TelegramError
@@ -11,6 +16,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 DATABASE_PATH = os.getenv("DATABASE_PATH", "data/subscribers.sqlite3")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+REPLACEMENTS_URL = "https://bask-rb.ru/%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D1%8B"
+CHECK_INTERVAL_SECONDS = 90 * 60  # 1 hour 30 minutes
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -29,6 +36,15 @@ def connect_db() -> sqlite3.Connection:
 
 def init_db() -> None:
     with closing(connect_db()) as db:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS monitor_state (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
         db.execute(
             """
             CREATE TABLE IF NOT EXISTS subscribers (
@@ -145,9 +161,98 @@ async def send_to_subscribers(
     return sent, failed
 
 
+
+def fetch_group_replacements() -> str:
+    """Fetch the college page and extract the С-12 section."""
+    request = urllib.request.Request(
+        REPLACEMENTS_URL,
+        headers={"User-Agent": "Mozilla/5.0 (compatible; RaspisanieC12Bot/1.0)"},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        html = response.read()
+
+    soup = BeautifulSoup(html, "html.parser")
+    lines = [
+        re.sub(r"\\s+", " ", line).strip()
+        for line in soup.get_text("\\n").replace("\\xa0", " ").splitlines()
+    ]
+    lines = [line for line in lines if line]
+
+    start = None
+    for index, line in enumerate(lines):
+        if re.match(r"^С[-‑–]12(?:\\s|\\||$)", line, re.IGNORECASE):
+            start = index
+            break
+
+    if start is None:
+        raise ValueError("Не удалось найти группу С-12 на странице замен")
+
+    section = [lines[start]]
+    group_pattern = re.compile(
+        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\\d{2}(?:\\s|\\||$)",
+        re.IGNORECASE,
+    )
+    for line in lines[start + 1:]:
+        if group_pattern.match(line):
+            break
+        section.append(line)
+
+    return "\\n".join(section)
+
+
+async def check_replacements(application: Application) -> None:
+    try:
+        current = await asyncio.to_thread(fetch_group_replacements)
+
+        with closing(connect_db()) as db:
+            previous = db.execute(
+                "SELECT value FROM monitor_state WHERE key = 'c12_snapshot'"
+            ).fetchone()
+
+            if previous is None:
+                # Save the first successful read as a baseline; do not send old data.
+                db.execute(
+                    "INSERT INTO monitor_state (key, value) VALUES ('c12_snapshot', ?)",
+                    (current,),
+                )
+                db.commit()
+                logger.info("Saved initial С-12 replacement snapshot")
+                return
+
+            if previous["value"] == current:
+                logger.info("No changes in С-12 replacements")
+                return
+
+            db.execute(
+                "UPDATE monitor_state SET value = ?, updated_at = CURRENT_TIMESTAMP "
+                "WHERE key = 'c12_snapshot'",
+                (current,),
+            )
+            db.commit()
+
+        message = (
+            "📢 Изменения в заменах группы С-12!\\n\\n"
+            f"{current}\\n\\nИсточник: {REPLACEMENTS_URL}"
+        )
+        await send_to_subscribers(application, message)
+    except Exception:
+        logger.exception("Не удалось проверить замены С-12")
+
+
+async def replacement_monitor(application: Application) -> None:
+    # First read establishes a baseline; subsequent reads run every 90 minutes.
+    while True:
+        await check_replacements(application)
+        await asyncio.sleep(CHECK_INTERVAL_SECONDS)
+
+
+async def post_init(application: Application) -> None:
+    application.create_task(replacement_monitor(application))
+
+
 def main() -> None:
     init_db()
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stop", stop))
     application.add_handler(CommandHandler("status", subscription_status))
