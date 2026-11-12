@@ -204,15 +204,13 @@ async function handleTelegramUpdate(update, env) {
     await sendText(env, chatId, groupListMessage());
   } else if (command === "/help") {
     await sendText(env, chatId,
-      "Привет! Я бот расписания С-12.\n\n" +
-      "Команды:\n\n" +
+      "Привет! Я бот расписания ГАПОУ БАСКА\n\n" +
       "/start — подписаться на уведомления\n\n" +
       "/stop — отписаться\n\n" +
       "/status — проверить подписку");
   } else {
     await sendText(env, chatId,
-      "Привет! Я бот расписания С-12.\n\n" +
-      "Команды:\n\n" +
+      "Привет! Я бот расписания ГАПОУ БАСКА\n\n" +
       "/start — подписаться на уведомления\n\n" +
       "/stop — отписаться\n\n" +
       "/status — проверить подписку");
