@@ -19,6 +19,8 @@ STATE_PATH = Path("data/state.enc")
 REPLACEMENTS_URL = "https://bask-rb.ru/%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D1%8B"
 CHECK_INTERVAL_SECONDS = 5 * 60
 MAX_TELEGRAM_TEXT = 4000
+WORKER_URL = os.environ.get("WORKER_URL", "").rstrip("/")
+WEBHOOK_MODE = os.environ.get("WEBHOOK_MODE", "").lower() in ("1", "true", "yes")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -81,6 +83,45 @@ def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> N
     if reply_markup is not None:
         payload["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
     telegram("sendMessage", payload)
+
+def worker_post(path: str, payload: dict | None = None) -> dict:
+    if not WORKER_URL:
+        raise RuntimeError("WORKER_URL is not configured")
+    data = json.dumps(payload or {}).encode("utf-8")
+    request = urllib.request.Request(
+        f"{WORKER_URL}{path}",
+        data=data,
+        headers={
+            "Authorization": f"Bearer {BOT_TOKEN}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=35) as response:
+        result = json.loads(response.read().decode("utf-8"))
+    if not result.get("ok"):
+        raise RuntimeError(f"Worker operation failed: {result}")
+    return result
+
+
+def sync_subscribers_with_worker(state: dict) -> None:
+    result = worker_post("/internal/sync-subscribers", {
+        "subscribers": state.get("subscribers", [])
+    })
+    logger.info("Синхронизировано подписчиков с Cloudflare: %d", result.get("count", 0))
+
+
+def notify_subscribers(text: str, state: dict) -> None:
+    if WORKER_URL:
+        result = worker_post("/internal/notify", {"text": text[:MAX_TELEGRAM_TEXT]})
+        logger.info("Уведомление отправлено через Cloudflare: %d/%d",
+                    result.get("sent", 0), result.get("total", 0))
+        return
+    for chat_id in list(state["subscribers"]):
+        try:
+            send_message(chat_id, text)
+        except Exception:
+            logger.exception("Не удалось отправить сообщение chat_id=%s", chat_id)
 
 
 GROUP_STUDENTS = [
@@ -264,11 +305,7 @@ def check_replacements(state: dict) -> None:
             "📢 Изменения в заменах группы С-12!\n\n"
             f"{current}\n\nИсточник: {REPLACEMENTS_URL}"
         )
-        for chat_id in list(state["subscribers"]):
-            try:
-                send_message(chat_id, message)
-            except Exception:
-                logger.exception("Не удалось отправить сообщение chat_id=%s", chat_id)
+        notify_subscribers(message, state)
         state["snapshot"] = current
         logger.info("Обнаружено изменение; уведомления отправлены подписчикам")
     else:
@@ -278,8 +315,15 @@ def check_replacements(state: dict) -> None:
 
 def main() -> None:
     state = load_state()
-    # This workflow runs every five minutes. Telegram commands are handled on each run.
-    process_updates(state)
+    if WEBHOOK_MODE:
+        # Telegram delivers commands directly to Cloudflare; never call getUpdates in webhook mode.
+        worker_post("/internal/setup-webhook")
+        logger.info("Webhook mode active; Telegram polling skipped")
+    else:
+        # Keep polling until subscriber sync is confirmed and webhook mode is enabled.
+        process_updates(state)
+        if WORKER_URL:
+            sync_subscribers_with_worker(state)
     now = int(time.time())
     if now - int(state.get("last_check", 0)) >= CHECK_INTERVAL_SECONDS:
         try:
