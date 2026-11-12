@@ -284,6 +284,58 @@ export default {
 
     if (!env.C12_DATA) return json({ error: "KV binding C12_DATA is missing" }, 500, origin);
 
+    if (url.pathname === "/games") {
+      if (request.method === "GET") {
+        const data = await env.C12_DATA.get("c12:games", "json") || { profiles: {}, claimed: {}, scores: {} };
+        const leaderboard = Object.entries(data.scores || {}).map(([student, score]) => ({ student, score }))
+          .sort((a, b) => b.score - a.score || a.student.localeCompare(b.student, "ru"));
+        return json({ ok: true, leaderboard }, 200, origin);
+      }
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, origin);
+      const raw = await request.text();
+      if (raw.length > 10000) return json({ error: "Request too large" }, 413, origin);
+      let body;
+      try { body = JSON.parse(raw); } catch { return json({ error: "Invalid JSON" }, 400, origin); }
+      const user = await verifyTelegramInitData(body.initData, env.BOT_TOKEN);
+      if (!user || !Number.isSafeInteger(Number(user.id))) return json({ error: "Открой приложение через Telegram и попробуй снова" }, 401, origin);
+      const data = await env.C12_DATA.get("c12:games", "json") || { profiles: {}, claimed: {}, scores: {} };
+      data.profiles ||= {}; data.claimed ||= {}; data.scores ||= {};
+      const telegramId = String(user.id);
+      let profile = data.profiles[telegramId];
+      if (body.action === "register") {
+        if (profile) return json({ ok: true, student: profile }, 200, origin);
+        const student = GROUP_STUDENTS.find(name => name === body.student);
+        if (!student) return json({ error: "Выбери фамилию из списка группы" }, 400, origin);
+        if (data.claimed[student] && data.claimed[student] !== telegramId) {
+          return json({ error: "Этот профиль уже привязан к другому Telegram-аккаунту. Обратись к старосте." }, 409, origin);
+        }
+        data.profiles[telegramId] = student;
+        data.claimed[student] = telegramId;
+        data.scores[student] ||= 0;
+        await env.C12_DATA.put("c12:games", JSON.stringify(data));
+        return json({ ok: true, student }, 200, origin);
+      }
+      if (!profile) return json({ error: "Сначала выбери своё имя" }, 403, origin);
+      if (body.action === "score") {
+        const limits = { memory: 60, darts: 100, karate: 100 };
+        const game = body.game;
+        const points = Number(body.points);
+        if (!Object.hasOwn(limits, game) || !Number.isInteger(points) || points < 0 || points > limits[game]) {
+          return json({ error: "Некорректный результат игры" }, 400, origin);
+        }
+        const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Yekaterinburg", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+        data.daily ||= {};
+        const dailyKey = telegramId + ":" + day;
+        const used = data.daily[dailyKey] || 0;
+        if (used + points > 500) return json({ error: "Дневной лимит — 500 баллов. Попробуй завтра!" }, 429, origin);
+        data.daily[dailyKey] = used + points;
+        data.scores[profile] = (data.scores[profile] || 0) + points;
+        await env.C12_DATA.put("c12:games", JSON.stringify(data));
+        return json({ ok: true, student: profile, added: points, total: data.scores[profile] }, 200, origin);
+      }
+      return json({ error: "Unknown action" }, 400, origin);
+    }
+
     if (request.method === "GET") {
       const state = await env.C12_DATA.get(STATE_KEY, "json");
       return json(state || DEFAULT_STATE, 200, origin);
