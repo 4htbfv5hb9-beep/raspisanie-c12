@@ -2128,29 +2128,49 @@ function closeWheel(){
 }
 function spinWheel(){
  if(wheelBusy)return;
- const names=wheelStudents(),button=document.getElementById("wheelSpin"),canvas=document.getElementById("wheelCanvas"),result=document.getElementById("wheelResult");
+ const names=wheelStudents();
+ const button=document.getElementById("wheelSpin");
+ const canvas=document.getElementById("wheelCanvas");
+ const result=document.getElementById("wheelResult");
  if(!names||!names.length||!button||!canvas||!result){alert("Не удалось открыть колесо. Закрой окно и попробуй ещё раз.");return;}
  wheelBusy=true;
- button.disabled=true;button.textContent="КОЛЕСО КРУТИТСЯ…";result.textContent="Выбираем, кто будет мыть доску…";
- const winner=Math.floor(Math.random()*names.length),step=360/names.length,center=winner*step+step/2;
- const current=((wheelRotation%360)+360)%360,desired=((360-center)%360+360)%360,delta=((desired-current)%360+360)%360;
- wheelRotation+=360*6+delta;
+ button.disabled=true;
+ button.textContent="КОЛЕСО КРУТИТСЯ…";
+ result.textContent="Выбираем, кто будет мыть доску…";
+ const winner=Math.floor(Math.random()*names.length);
+ const step=360/names.length;
+ const center=winner*step+step/2;
+ const current=((wheelRotation%360)+360)%360;
+ const desired=((360-center)%360+360)%360;
+ const delta=((desired-current)%360+360)%360;
+ const start=wheelRotation;
+ const target=start+360*6+delta;
+ const duration=5200;
+ const started=Date.now();
  let finished=false;
- const done=()=>{
+ function finish(){
   if(finished)return;
   finished=true;
+  wheelRotation=target;
+  canvas.style.transform="rotate("+target+"deg)";
   result.textContent="🎉 Сегодня доску моет: "+names[winner]+"!";
-  button.disabled=false;button.textContent="КРУТИТЬ ЕЩЁ РАЗ";wheelBusy=false;
-  canvas.removeEventListener("transitionend",done);
- };
- canvas.removeEventListener("transitionend",done);
- canvas.addEventListener("transitionend",done);
- canvas.style.transition="transform 5s cubic-bezier(.12,.72,.12,1)";
- canvas.style.willChange="transform";
+  button.disabled=false;
+  button.textContent="КРУТИТЬ ЕЩЁ РАЗ";
+  wheelBusy=false;
+ }
+ function frame(){
+  if(finished)return;
+  const progress=Math.min(1,(Date.now()-started)/duration);
+  const eased=1-Math.pow(1-progress,4);
+  const angle=start+(target-start)*eased;
+  canvas.style.transform="rotate("+angle+"deg)";
+  if(progress<1){window.requestAnimationFrame(frame);}else{finish();}
+ }
+ canvas.style.transition="none";
+ canvas.style.transform="rotate("+start+"deg)";
  void canvas.offsetWidth;
- canvas.style.transform="rotate("+wheelRotation+"deg)";
- // Запасное завершение для Safari, если transitionend не сработает.
- window.setTimeout(done,5600);
+ window.requestAnimationFrame(frame);
+ window.setTimeout(finish,duration+500);
 }
 
 </script>
