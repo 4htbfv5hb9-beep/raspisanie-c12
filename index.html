@@ -1106,8 +1106,18 @@ footer span {
     <h1>Расписание <span style="color:var(--red)">С-33</span></h1>
     <p>Занятия по дням недели · с учётом подгрупп и чередования недель</p>
   </section>
+  <div class="controls" style="margin:0 0 18px">
+    <div class="week-switch">
+      <button id="c33WhiteBtn" class="active" type="button" onclick="setC33Week('white')">Белая неделя</button>
+      <button id="c33RedBtn" type="button" onclick="setC33Week('red')">Красная неделя</button>
+    </div>
+  </div>
+  <div class="section-heading">
+    <h2 id="c33WeekTitle">Белая неделя</h2>
+    <span>ГРУППА С-33</span>
+  </div>
   <section class="c33-days" id="c33Days"></section>
-  <p class="c33-note">Красная и белая недели отмечены отдельно там, где расписание отличается. «Нет пары» означает, что занятие для этой подгруппы не проводится.</p>
+  <p class="c33-note">Занятия показаны отдельно для выбранной недели и подгруппы. «Нет пары» означает, что занятие не проводится.</p>
   <footer>DESIGNED & BUILT BY <span>SKYROCKETED</span></footer>
 </section>
 
@@ -1760,6 +1770,7 @@ function karateMove(action){
 }
 
 
+let c33CurrentWeek = "white";
 const c33Schedule = [
  {day:"Понедельник",lessons:[
   {pair:5,subject:"Строительные машины",details:[["Обе подгруппы","Иванов","55"]]},
@@ -1795,12 +1806,30 @@ const c33Schedule = [
   {pair:6,subject:"Инженерные сети",details:[["Обе подгруппы","Степанова","72"]]}
  ]}
 ];
+function setC33Week(week){
+ c33CurrentWeek=week;
+ document.getElementById("c33WhiteBtn").classList.toggle("active",week==="white");
+ document.getElementById("c33RedBtn").classList.toggle("active",week==="red");
+ document.getElementById("c33WeekTitle").textContent=week==="white"?"Белая неделя":"Красная неделя";
+ renderC33Schedule();
+}
 function renderC33Schedule(){
  const root=document.getElementById("c33Days");
- root.innerHTML=c33Schedule.map(day=>'<article class="c33-day"><h2>'+day.day+'</h2>'+
- day.lessons.map(lesson=>'<div class="c33-lesson"><div class="c33-pair">'+lesson.pair+'</div><div class="c33-info"><div class="c33-subject">'+lesson.subject+'</div>'+
- lesson.details.map(d=>'<div class="c33-detail"><span class="c33-week">'+d[0]+'</span><strong>'+d[1]+'</strong>'+(d[2]?' · каб. '+d[2]:'')+'</div>').join('')+
- '</div></div>').join('')+'</article>').join('');
+ root.innerHTML=c33Schedule.map(day=>{
+  const lessons=day.lessons.map(lesson=>{
+   const details=lesson.details.filter(d=>{
+    const label=d[0];
+    if(label.includes("Красная")) return c33CurrentWeek==="red";
+    if(label.includes("Белая")) return c33CurrentWeek==="white";
+    return true;
+   });
+   return {...lesson,visibleDetails:details};
+  }).filter(lesson=>lesson.visibleDetails.length);
+  return '<article class="c33-day"><h2>'+day.day+'</h2>'+
+   lessons.map(lesson=>'<div class="c33-lesson"><div class="c33-pair">'+lesson.pair+'</div><div class="c33-info"><div class="c33-subject">'+lesson.subject+'</div>'+
+   lesson.visibleDetails.map(d=>'<div class="c33-detail"><span class="c33-week">'+d[0]+'</span><strong>'+d[1]+'</strong>'+(d[2]?' · каб. '+d[2]:'')+'</div>').join('')+
+   '</div></div>').join('')+'</article>';
+ }).join('');
 }
 function openGroupC33(){
  document.getElementById("groupChooser").classList.add("group-hidden");
