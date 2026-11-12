@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#101014">
+<meta name="theme-color" content="#101014">\n<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Расписание С-12</title>
 
 <style>
@@ -847,6 +847,30 @@ footer span {
 .wheel-person{padding:7px 9px;border-radius:8px;background:var(--panel2);color:var(--muted);font-size:10px}
 @media(max-width:560px){.wheel-box{padding:16px}.wheel-roster{grid-template-columns:1fr}.wheel-stage{width:min(82vw,390px)}}
 
+ 
+.games-modal{display:none;position:fixed;inset:0;z-index:1200;background:#08080deF;overflow:auto;padding:18px}
+.games-modal.open{display:block}
+.games-box{width:min(760px,100%);margin:25px auto;background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:22px}
+.games-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.games-top h2{font-size:21px}.game-close{background:var(--panel2);color:white;border:1px solid var(--border);border-radius:10px;padding:9px 13px}
+.games-muted{color:var(--muted);font-size:13px;line-height:1.5}
+.games-field{width:100%;padding:13px;border-radius:12px;background:var(--panel2);color:white;border:1px solid var(--border);margin:8px 0 12px;font:inherit}
+.games-primary,.game-tile,.game-action{border:0;border-radius:13px;padding:13px 16px;background:linear-gradient(135deg,#ff424f,#c91f36);color:white;font-weight:800;cursor:pointer}
+.games-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0}
+.game-tile{background:var(--panel2);border:1px solid var(--border);text-align:left;min-height:100px;font-size:15px}
+.game-tile span{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:7px}
+.games-stat{padding:14px;background:var(--panel2);border-radius:13px;margin:12px 0}
+.games-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0}
+.memory-card{height:68px;border:1px solid var(--border);border-radius:12px;background:#292932;color:white;font-size:25px}
+.memory-card.opened{background:#56303a}
+.dart-board{width:min(320px,85vw);aspect-ratio:1;border-radius:50%;margin:15px auto;background:radial-gradient(circle,#f7d35a 0 12%,#25252d 13% 27%,#e34b56 28% 42%,#25252d 43% 60%,#e34b56 61% 75%,#25252d 76%);border:7px solid #aaa;position:relative;cursor:crosshair;touch-action:manipulation}
+.dart-board:after{content:'+';position:absolute;inset:0;display:grid;place-items:center;color:white;font-size:28px;pointer-events:none}
+.karate-scene{background:linear-gradient(#293b4b,#17212b);border-radius:16px;padding:25px 12px;text-align:center;font-size:48px;margin:14px 0}
+.game-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.game-actions button{min-width:120px}
+.game-rank{display:flex;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--border);font-size:13px}
+@media(max-width:500px){.games-box{padding:16px;margin:5px auto}.memory-card{height:58px}}
+
 </style>
 </head>
 
@@ -934,7 +958,7 @@ footer span {
         📋 Список группы
     </button>
 
-    <button class="replace-button score-soon" type="button" onclick="showScoreSoon()">🏆 Баллы</button>
+    <button class="replace-button score-soon" type="button" onclick="openGames()">🎮 Игры и рейтинг</button>
     <button class="replace-button" type="button" onclick="openWheel()">🎡 Колесо фортуны</button>
 
     <a class="replace-button" href="https://t.me/Raspisanie_C12_bot" target="_blank" rel="noopener noreferrer">
@@ -945,6 +969,12 @@ footer span {
 </div>
 
 
+<div class="games-modal" id="gamesModal" onclick="if(event.target===this)closeGames()">
+ <div class="games-box">
+  <div class="games-top"><h2>🎮 Мини-игры С-12</h2><button class="game-close" onclick="closeGames()">✕</button></div>
+  <div id="gamesContent"><p class="games-muted">Подключаем Telegram…</p></div>
+ </div>
+</div>
 <div class="wheel-modal" id="wheelModal" role="dialog" aria-modal="true" aria-labelledby="wheelTitle" onclick="if(event.target===this)closeWheel()">
  <div class="wheel-box">
   <div class="wheel-head"><h2 id="wheelTitle">🎡 Кто моет доску?</h2><button class="wheel-close" type="button" onclick="closeWheel()">✕</button></div>
@@ -1619,6 +1649,78 @@ updatePermDashboard();
 setInterval(updatePermDashboard, 1000);
 
 
+
+const GAMES_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/games";
+let gameProfile=null,gameBusy=false;
+async function gamesRequest(payload){
+ const initData=window.Telegram?.WebApp?.initData||"";
+ const res=await fetch(GAMES_API,{method:payload?"POST":"GET",headers:{"Content-Type":"application/json"},body:payload?JSON.stringify({...payload,initData}):undefined});
+ const data=await res.json();if(!res.ok)throw new Error(data.error||"Ошибка сервера");return data;
+}
+function openGames(){document.getElementById("gamesModal").classList.add("open");document.body.style.overflow="hidden";window.Telegram?.WebApp?.ready();window.Telegram?.WebApp?.expand();loadGames();}
+function closeGames(){document.getElementById("gamesModal").classList.remove("open");document.body.style.overflow="";}
+async function loadGames(){
+ const el=document.getElementById("gamesContent");el.innerHTML='<p class="games-muted">Загружаем профиль и рейтинг…</p>';
+ try{
+  if(!window.Telegram?.WebApp?.initData){el.innerHTML='<p class="games-muted">Чтобы привязать профиль, открой расписание через Telegram-бота, а не в обычном браузере.</p>';return;}
+  const data=await gamesRequest();
+  const me=await gamesRequest({action:"whoami"});
+  gameProfile=me.student||null;
+  if(!gameProfile){el.innerHTML='<h3>Первый вход</h3><p class="games-muted">Выбери своё полное имя. Оно закрепится за твоим Telegram-аккаунтом.</p><select id="gameStudent" class="games-field"><option value="">Выбери фамилию и имя</option>'+groupStudents.map(n=>'<option>'+n+'</option>').join("")+'</select><button class="games-primary" onclick="registerGameProfile()">Привязать Telegram</button><p class="games-muted" id="gameError"></p>';return;}
+  renderGameHome(data.leaderboard||[]);
+ }catch(e){el.innerHTML='<p class="games-muted">'+escapeGameText(e.message)+'</p><button class="games-primary" onclick="loadGames()">Повторить</button>';}
+}
+function escapeGameText(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+async function registerGameProfile(){
+ const student=document.getElementById("gameStudent").value;if(!student){document.getElementById("gameError").textContent="Сначала выбери себя из списка.";return;}
+ try{await gamesRequest({action:"register",student});await loadGames();}catch(e){document.getElementById("gameError").textContent=e.message;}
+}
+function renderGameHome(ranking){
+ const mine=ranking.find(x=>x.student===gameProfile)?.score||0;
+ const place=ranking.findIndex(x=>x.student===gameProfile)+1;
+ document.getElementById("gamesContent").innerHTML='<div class="games-stat">👤 '+escapeGameText(gameProfile)+'<br>🏆 Баллы: <b>'+mine+'</b> · Место: <b>'+(place||"—")+'</b></div><div class="games-grid"><button class="game-tile" onclick="startMemory()">🧠 Память<span>Найди все пары карточек</span></button><button class="game-tile" onclick="startDarts()">🎯 Дартс<span>Пять бросков в мишень</span></button><button class="game-tile" onclick="startKarate()">🥋 Каратэ<span>Руби деревья и уворачивайся</span></button></div><h3>🏅 Рейтинг группы</h3><div>'+ranking.map((x,i)=>'<div class="game-rank"><span>'+(i+1)+'. '+escapeGameText(x.student)+(x.student===gameProfile?' (ты)':'')+'</span><b>'+x.score+'</b></div>').join("")+'</div><button class="game-close" style="margin-top:14px" onclick="loadGames()">Обновить рейтинг</button>';
+}
+async function awardGame(game,points){
+ try{const result=await gamesRequest({action:"score",game,points});alert('+'+result.added+' баллов! Всего: '+result.total);loadGames();}
+ catch(e){alert(e.message);}
+}
+function startMemory(){
+ const icons=["🍎","🚀","🎧","⚽","🍕","🐱"];let cards=[...icons,...icons].sort(()=>Math.random()-.5),open=[],matched=0,tries=0;
+ document.getElementById("gamesContent").innerHTML='<h3>🧠 Память</h3><p class="games-muted">Открой одинаковые пары. Чем меньше ошибок — тем больше баллов!</p><div class="games-stat" id="memStat">Найдено: 0/6</div><div class="games-board" id="memBoard">'+cards.map((x,i)=>'<button class="memory-card" onclick="flipMemory('+i+')">?</button>').join("")+'</div><button class="game-close" onclick="loadGames()">Назад</button>';
+ window.memState={cards,open,matched,tries,done:false};
+}
+function flipMemory(i){
+ const st=window.memState;if(!st||st.done||st.open.includes(i)||document.querySelectorAll(".memory-card")[i].classList.contains("opened"))return;
+ const btn=document.querySelectorAll(".memory-card")[i];btn.textContent=st.cards[i];btn.classList.add("opened");st.open.push(i);
+ if(st.open.length===2){st.tries++;const [a,b]=st.open;if(st.cards[a]===st.cards[b]){st.matched++;st.open=[];document.getElementById("memStat").textContent='Найдено: '+st.matched+'/6';if(st.matched===6){st.done=true;awardGame("memory",Math.max(10,60-st.tries*3));}}else setTimeout(()=>{[a,b].forEach(n=>{const el=document.querySelectorAll(".memory-card")[n];if(el){el.textContent="?";el.classList.remove("opened");}});st.open=[];},650);}
+}
+function startDarts(){
+ window.dartScore=0;window.dartThrows=0;
+ document.getElementById("gamesContent").innerHTML='<h3>🎯 Дартс</h3><p class="games-muted">Нажимай на мишень. Чем ближе к центру, тем больше очков. Пять бросков.</p><div class="games-stat" id="dartStat">Броски: 0/5 · Очки: 0</div><div class="dart-board" onclick="throwDart(event)"></div><button class="game-close" onclick="loadGames()">Назад</button>';
+}
+function throwDart(e){
+ if(window.dartThrows>=5)return;const r=e.currentTarget.getBoundingClientRect(),x=(e.clientX-r.left-r.width/2)/(r.width/2),y=(e.clientY-r.top-r.height/2)/(r.height/2),dist=Math.sqrt(x*x+y*y);
+ const pts=dist<.15?20:dist<.32?15:dist<.52?10:dist<.75?5:0;window.dartScore+=pts;window.dartThrows++;
+ document.getElementById("dartStat").textContent='Броски: '+window.dartThrows+'/5 · Очки: '+window.dartScore;
+ if(window.dartThrows===5){const total=window.dartScore;setTimeout(()=>awardGame("darts",total),300);}
+}
+function startKarate(){
+ window.karateTurn=0;window.karatePoints=0;window.karateNext=Math.random()<.5?"left":"right";
+ document.getElementById("gamesContent").innerHTML='<h3>🥋 Каратэ: лесной вызов</h3><p class="games-muted">На каждом шаге выбери действие: руби дерево или уклоняйся от ветки в указанную сторону.</p><div class="karate-scene"><div id="karateTree">🌳</div><div id="karatePrompt" style="font-size:17px;margin-top:10px">Готов?</div></div><div class="games-stat" id="karateStat">Шаг: 0/10 · Очки: 0</div><div class="game-actions"><button class="game-action" onclick="karateMove('chop')">🪓 Рубить</button><button class="game-action" onclick="karateMove('left')">⬅️ Влево</button><button class="game-action" onclick="karateMove('right')">➡️ Вправо</button></div><p class="games-muted" style="margin-top:12px">Если ветка слева — уклоняйся вправо, если справа — влево. Если веток нет — руби!</p><button class="game-close" onclick="loadGames()">Назад</button>';
+ karateNextStep();
+}
+function karateNextStep(){
+ const branch=Math.random()<.65?(Math.random()<.5?"left":"right"):"none";window.karateNext=branch;
+ document.getElementById("karateTree").textContent=branch==="none"?"🌳":branch==="left"?"🌳🌿":"🌿🌳";
+ document.getElementById("karatePrompt").textContent=branch==="none"?"Ветки нет — руби дерево!":branch==="left"?"Ветка слева — уклоняйся вправо!":"Ветка справа — уклоняйся влево!";
+}
+function karateMove(action){
+ if(window.karateTurn>=10)return;const b=window.karateNext,ok=b==="none"?action==="chop":(b==="left"&&action==="right")||(b==="right"&&action==="left");
+ if(ok)window.karatePoints+=10;window.karateTurn++;
+ document.getElementById("karateStat").textContent='Шаг: '+window.karateTurn+'/10 · Очки: '+window.karatePoints;
+ if(window.karateTurn===10){setTimeout(()=>awardGame("karate",window.karatePoints),350);}else karateNextStep();
+}
+
 function openGroupC12(){
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
@@ -1636,9 +1738,8 @@ function backToGroups(){
  document.getElementById("groupChooser").classList.remove("group-hidden");
  window.scrollTo(0,0);
 }
-function showScoreSoon(){
- alert("Раздел «Баллы» — СКОРО!");
-}
+function showScoreSoon(){ openGames(); }
+
 
 
 let wheelRotation=0;
