@@ -196,6 +196,62 @@ export default {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") || "*";
 
+    if (url.pathname.startsWith("/internal/")) {
+      if (request.method !== "POST" || !env.BOT_TOKEN || !env.C12_DATA) {
+        return json({ ok: false }, 404, origin);
+      }
+      const auth = request.headers.get("Authorization") || "";
+      if (!constantTimeEqual(auth, `Bearer ${env.BOT_TOKEN}`)) {
+        return json({ ok: false }, 403, origin);
+      }
+      try {
+        if (url.pathname === "/internal/sync-subscribers") {
+          const body = await request.json();
+          if (!Array.isArray(body.subscribers) || body.subscribers.length > 10000 ||
+              !body.subscribers.every(id => Number.isSafeInteger(Number(id)))) {
+            return json({ ok: false, error: "Invalid subscribers" }, 400, origin);
+          }
+          const subscribers = [...new Set(body.subscribers.map(Number))];
+          await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers));
+          return json({ ok: true, count: subscribers.length }, 200, origin);
+        }
+        if (url.pathname === "/internal/notify") {
+          const body = await request.json();
+          if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 4000) {
+            return json({ ok: false, error: "Invalid message" }, 400, origin);
+          }
+          const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
+          let sent = 0;
+          for (const chatId of subscribers) {
+            try { await sendText(env, chatId, body.text); sent++; }
+            catch (error) { console.error("Notification delivery failed"); }
+          }
+          return json({ ok: true, sent, total: subscribers.length }, 200, origin);
+        }
+        if (url.pathname === "/internal/setup-webhook") {
+          if (!env.TELEGRAM_WEBHOOK_SECRET) {
+            return json({ ok: false, error: "Webhook secret missing" }, 500, origin);
+          }
+          const webhookUrl = `${url.origin}/telegram/c12-s12-updates`;
+          const current = await telegram(env, "getWebhookInfo", {});
+          if (current.url !== webhookUrl) {
+            await telegram(env, "setWebhook", {
+              url: webhookUrl,
+              secret_token: env.TELEGRAM_WEBHOOK_SECRET,
+              allowed_updates: JSON.stringify(["message"]),
+              drop_pending_updates: false
+            });
+          }
+          await env.C12_DATA.put("c12:webhook:configured", "1");
+          return json({ ok: true, configured: true, url: webhookUrl }, 200, origin);
+        }
+        return json({ ok: false }, 404, origin);
+      } catch (error) {
+        console.error("Internal request failed");
+        return json({ ok: false, error: "Internal operation failed" }, 500, origin);
+      }
+    }
+
     if (url.pathname.startsWith("/telegram/")) {
       if (request.method !== "POST" || !env.TELEGRAM_WEBHOOK_SECRET) {
         return json({ ok: false }, 404, origin);
