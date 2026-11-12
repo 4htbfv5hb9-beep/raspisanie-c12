@@ -631,6 +631,71 @@ footer span {
         font-size: 8px;
     }
 }
+
+/* LIVE CLOCK & CURRENT LESSON */
+.live-panel {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 18px;
+    padding: 22px;
+    margin: 0 0 25px;
+    border: 1px solid rgba(255,66,79,.28);
+    border-radius: 22px;
+    background: linear-gradient(120deg, rgba(255,66,79,.12), transparent 55%), var(--panel);
+}
+.live-clock, .live-lesson { min-width: 0; }
+.live-caption {
+    color: #ff858d;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    margin-bottom: 9px;
+}
+.live-time {
+    font-size: clamp(34px, 6vw, 48px);
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -2px;
+    font-variant-numeric: tabular-nums;
+}
+.live-date, .live-zone {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 6px;
+}
+.live-lesson {
+    padding: 15px 17px;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    background: rgba(255,255,255,.035);
+}
+.live-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+.live-status::before {
+    content: "";
+    width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor; box-shadow: 0 0 10px currentColor;
+}
+.live-status.waiting { color: #ffca7a; }
+.live-status.off { color: var(--muted); }
+.live-subject { font-size: 17px; font-weight: 800; line-height: 1.35; }
+.live-meta { color: var(--muted); font-size: 11px; margin-top: 5px; }
+.live-countdown { color: #ff858d; font-size: 13px; font-weight: 800; margin-top: 10px; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+    .live-panel { grid-template-columns: 1fr; padding: 18px; gap: 14px; }
+    .live-lesson { padding: 13px 14px; }
+}
+
 </style>
 </head>
 
@@ -651,6 +716,23 @@ footer span {
     <div class="hero-label">УЧЕБНЫЙ ПОРТАЛ</div>
     <h1>Твоё расписание<br><span>на неделю.</span></h1>
     <p>Все занятия группы С-12 в одном месте.</p>
+</section>
+
+
+<section class="live-panel" aria-live="polite">
+    <div class="live-clock">
+        <div class="live-caption">ТЕКУЩЕЕ ВРЕМЯ · ПЕРМЬ</div>
+        <div class="live-time" id="permClock">--:--:--</div>
+        <div class="live-date" id="permDate">Загружаем дату…</div>
+        <div class="live-zone">Часовой пояс: Пермь (UTC+5)</div>
+    </div>
+    <div class="live-lesson">
+        <div class="live-caption">ЧТО СЕЙЧАС ПО РАСПИСАНИЮ</div>
+        <div class="live-status off" id="lessonStatus">ПРОВЕРЯЕМ</div>
+        <div class="live-subject" id="currentLesson">Определяем пару…</div>
+        <div class="live-meta" id="lessonMeta">Группа С-12</div>
+        <div class="live-countdown" id="lessonCountdown"></div>
+    </div>
 </section>
 
 <div class="controls">
@@ -871,6 +953,112 @@ red: [
 
 let currentWeek = "white";
 
+const PERM_TZ = "Asia/Yekaterinburg";
+const bellTimes = [
+    { start: "08:30", end: "10:00" },
+    { start: "10:10", end: "11:40" },
+    { start: "12:30", end: "13:50" },
+    { start: "14:10", end: "15:30" }
+];
+
+function permNowParts() {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: PERM_TZ, year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+        weekday: "long"
+    }).formatToParts(new Date());
+    return Object.fromEntries(parts.map(part => [part.type, part.value]));
+}
+
+function clockMinutes(value) {
+    const [h, m] = value.split(":").map(Number);
+    return h * 60 + m;
+}
+
+function formatRemaining(seconds) {
+    const safe = Math.max(0, seconds);
+    const h = Math.floor(safe / 3600);
+    const m = Math.floor((safe % 3600) / 60);
+    const sec = safe % 60;
+    if (h) return h + " ч " + m + " мин";
+    if (m) return m + " мин " + sec + " сек";
+    return sec + " сек";
+}
+
+function groupedForDay(day) {
+    const result = [];
+    (day?.lessons || []).forEach(item => {
+        const last = result[result.length - 1];
+        if (last && last.subject === item[0]) {
+            last.groups.push({ teacher: item[1], room: item[2] });
+        } else {
+            result.push({ subject: item[0], groups: [{ teacher: item[1], room: item[2] }] });
+        }
+    });
+    return result;
+}
+
+function updatePermDashboard() {
+    const p = permNowParts();
+    const hour = Number(p.hour), minute = Number(p.minute), second = Number(p.second);
+    const nowMinutes = hour * 60 + minute;
+    document.getElementById("permClock").textContent =
+        String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0") + ":" + String(second).padStart(2, "0");
+
+    const date = new Date(Number(p.year), Number(p.month) - 1, Number(p.day));
+    document.getElementById("permDate").textContent =
+        new Intl.DateTimeFormat("ru-RU", { timeZone: PERM_TZ, weekday: "long", day: "numeric", month: "long" }).format(date);
+
+    const weekdayIndex = ({ monday: 0, tuesday: 1, wednesday: 2, thursday: 3, friday: 4, saturday: 5 })[p.weekday.toLowerCase()];
+    const status = document.getElementById("lessonStatus");
+    const subject = document.getElementById("currentLesson");
+    const meta = document.getElementById("lessonMeta");
+    const countdown = document.getElementById("lessonCountdown");
+
+    if (weekdayIndex === undefined) {
+        status.className = "live-status off";
+        status.textContent = "ВЫХОДНОЙ";
+        subject.textContent = "Сегодня занятий нет";
+        meta.textContent = "Хорошего отдыха!";
+        countdown.textContent = "";
+        return;
+    }
+
+    const day = schedule[currentWeek][weekdayIndex];
+    const lessons = groupedForDay(day);
+    const activeIndex = bellTimes.findIndex(t => nowMinutes >= clockMinutes(t.start) && nowMinutes < clockMinutes(t.end));
+
+    if (activeIndex >= 0 && lessons[activeIndex]) {
+        const slot = bellTimes[activeIndex];
+        const remaining = (clockMinutes(slot.end) - nowMinutes) * 60 - second;
+        status.className = "live-status";
+        status.textContent = (activeIndex + 1) + "-Я ПАРА ИДЁТ";
+        subject.textContent = lessons[activeIndex].subject;
+        meta.textContent = "Пара " + slot.start + "–" + slot.end + " · " + day.day;
+        countdown.textContent = "До конца пары: " + formatRemaining(remaining);
+        return;
+    }
+
+    const nextIndex = bellTimes.findIndex(t => nowMinutes < clockMinutes(t.start));
+    if (nextIndex >= 0 && lessons[nextIndex]) {
+        const next = bellTimes[nextIndex];
+        const remaining = (clockMinutes(next.start) - nowMinutes) * 60 - second;
+        status.className = "live-status waiting";
+        status.textContent = "ПЕРЕРЫВ";
+        subject.textContent = "Следующая: " + lessons[nextIndex].subject;
+        meta.textContent = (nextIndex + 1) + "-я пара · начало в " + next.start;
+        countdown.textContent = "До начала: " + formatRemaining(remaining);
+        return;
+    }
+
+    status.className = "live-status off";
+    status.textContent = "ЗАНЯТИЯ ЗАВЕРШЕНЫ";
+    subject.textContent = "На сегодня всё!";
+    meta.textContent = "Расписание на " + day.day.toLowerCase() + " закончено";
+    countdown.textContent = "";
+}
+
+
 const groupStudents = [
     "Адиятов Амир Артурович",
     "Баталов Данил Айратович",
@@ -1084,12 +1272,11 @@ function setWeek(week) {
 
 const anchor = new Date(2026, 10, 9);
 
-const now = new Date();
-
+const permPartsForWeek = permNowParts();
 const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
+    Number(permPartsForWeek.year),
+    Number(permPartsForWeek.month) - 1,
+    Number(permPartsForWeek.day)
 );
 
 const difference = Math.floor(
@@ -1103,6 +1290,8 @@ currentWeek = ((weekNumber % 2 + 2) % 2 === 0)
     : "red";
 
 renderSchedule();
+updatePermDashboard();
+setInterval(updatePermDashboard, 1000);
 
 </script>
 
