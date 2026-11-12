@@ -810,7 +810,7 @@ footer span {
 .group-chooser .brand{color:#ff858d;font-size:11px;font-weight:800;letter-spacing:3px;margin-bottom:14px}
 .group-chooser h1{font-size:clamp(30px,7vw,48px);line-height:1.12;letter-spacing:-1.5px;margin-bottom:12px}
 .group-chooser .subtitle{color:var(--muted);font-size:14px;margin-bottom:34px}
-.group-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.group-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .group-option{position:relative;min-height:190px;padding:25px 20px;text-align:left;border:1px solid var(--border);border-radius:24px;background:linear-gradient(145deg,rgba(255,66,79,.15),transparent 65%),var(--panel);color:var(--text);cursor:pointer;transition:.25s;overflow:hidden}
 .group-option:hover{transform:translateY(-5px);border-color:rgba(255,66,79,.55)}
 .group-option .group-name{display:block;font-size:36px;font-weight:800;letter-spacing:-1px}
@@ -902,6 +902,11 @@ footer span {
   <h1>Выбери свою<br><span style="color:var(--red)">группу</span></h1>
   <p class="subtitle">Расписание, замены и всё важное в одном месте</p>
   <div class="group-options">
+    <button class="group-option" type="button" onclick="showComingSoon()">
+      <span class="group-name">Новая группа</span>
+      <span class="group-desc">Хотите добавить свою группу?</span>
+      <span class="group-status">НАПИСАТЬ АДМИНИСТРАТОРУ →</span>
+    </button>
     <button class="group-option" type="button" onclick="openGroupC33()">
       <span class="group-name">С-33</span>
       <span class="group-desc">Расписание учебной группы</span>
