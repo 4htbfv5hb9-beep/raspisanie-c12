@@ -820,6 +820,22 @@ footer span {
 .group-option.coming{background:linear-gradient(145deg,rgba(255,255,255,.07),transparent 65%),var(--panel)}
 .group-option.coming .group-status{background:rgba(255,255,255,.08);color:#b9b9c3}
 .group-chooser .footnote{margin-top:25px;color:#656571;font-size:10px;letter-spacing:1.5px}
+.home-screen{padding:min(8vh,64px) 0 42px;text-align:left}
+.home-screen>.brand,.home-screen>h1,.home-screen>.subtitle,.home-screen>.footnote{text-align:center}
+.home-screen>.subtitle{margin-bottom:28px}
+.home-feature{width:100%;display:flex;align-items:center;gap:16px;min-height:112px;margin:13px 0;padding:20px 22px;text-align:left;border:1px solid var(--border);border-radius:22px;background:linear-gradient(115deg,rgba(255,66,79,.13),transparent 65%),var(--panel);color:var(--text);cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.home-feature:hover{transform:translateY(-3px);border-color:rgba(255,66,79,.55);box-shadow:0 12px 35px rgba(0,0,0,.2)}
+.home-feature-icon{flex:0 0 58px;width:58px;height:58px;display:grid;place-items:center;border-radius:18px;background:var(--red-soft);font-size:29px}
+.home-feature-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.home-feature-main strong{font-size:18px;font-weight:800}
+.home-feature-main small{color:var(--muted);font-size:12px;line-height:1.5}
+.home-feature-arrow{color:#ff858d;font-size:25px;font-weight:800}
+.games-feature{border-color:rgba(255,66,79,.38);background:linear-gradient(110deg,rgba(255,66,79,.2),transparent 70%),var(--panel)}
+.new-feature{background:linear-gradient(110deg,rgba(255,255,255,.06),transparent 70%),var(--panel)}
+.group-list-view{padding-top:8vh}
+.group-list-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:560px){.home-screen{padding-top:8vh}.home-feature{min-height:100px;padding:17px}.home-feature-icon{width:52px;height:52px;flex-basis:52px}.home-feature-main strong{font-size:16px}.home-feature-main small{font-size:11px}.group-list-options{grid-template-columns:1fr}.group-list-options .group-option{min-height:145px}}
+
 .group-hidden{display:none!important}
 .group-back{margin:0 0 18px;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--muted);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .soon-view{width:min(760px,92%);margin:0 auto;padding:18vh 0;text-align:center}
@@ -912,24 +928,55 @@ footer span {
 
 <body>
 
-<section class="group-chooser" id="groupChooser">
-  <div class="brand">УЧЕБНЫЙ ПОРТАЛ</div>
+<section class="group-chooser home-screen" id="groupChooser">
+  <div class="brand">УЧЕБНЫЙ ПОРТАЛ · ГАПОУ БАСКА</div>
+  <h1>Всё для учёбы<br><span style="color:var(--red)">в одном месте</span></h1>
+  <p class="subtitle">Выбери нужный раздел приложения</p>
+
+  <button class="home-feature games-feature" type="button" onclick="openGames()">
+    <span class="home-feature-icon">👾</span>
+    <span class="home-feature-main">
+      <strong>Мини-игры</strong>
+      <small>Играй, зарабатывай баллы и поднимайся в рейтинге</small>
+    </span>
+    <span class="home-feature-arrow">→</span>
+  </button>
+
+  <button class="home-feature groups-feature" type="button" onclick="openGroupList()">
+    <span class="home-feature-icon">📚</span>
+    <span class="home-feature-main">
+      <strong>Группы</strong>
+      <small>Расписание, звонки, замены и информация о группе</small>
+    </span>
+    <span class="home-feature-arrow">→</span>
+  </button>
+
+  <button class="home-feature new-feature" type="button" onclick="showNewGroupRequest()">
+    <span class="home-feature-icon">✚</span>
+    <span class="home-feature-main">
+      <strong>Новая группа</strong>
+      <small>Добавить расписание своей группы в приложение</small>
+    </span>
+    <span class="home-feature-arrow">→</span>
+  </button>
+
+  <div class="footnote">РАСПИСАНИЕ · 2026—2027</div>
+</section>
+
+<section class="group-chooser group-list-view group-hidden" id="groupListView">
+  <button class="group-back" type="button" onclick="backToHome()">← НА ГЛАВНУЮ</button>
+  <div class="brand">ВЫБОР ГРУППЫ</div>
   <h1>Выбери свою<br><span style="color:var(--red)">группу</span></h1>
-  <p class="subtitle">Расписание, замены и всё важное в одном месте</p>
-  <div class="group-options">
-    <button class="group-option" type="button" onclick="showNewGroupRequest()">
-      <span class="group-name">Новая группа</span>
-      <span class="group-desc">Хотите добавить свою группу?</span>
-      <span class="group-status">НАПИСАТЬ АДМИНИСТРАТОРУ →</span>
+  <p class="subtitle">Открой расписание своей группы</p>
+  <div class="group-options group-list-options">
+    <button class="group-option" type="button" onclick="openGroupC12()">
+      <span class="group-name">С-12</span>
+      <span class="group-desc">Расписание и сервисы группы</span>
+      <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
     </button>
     <button class="group-option" type="button" onclick="openGroupC33()">
       <span class="group-name">С-33</span>
       <span class="group-desc">Расписание учебной группы</span>
-      <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
-    </button>
-    <button class="group-option" type="button" onclick="openGroupC12()">
-      <span class="group-name">С-12</span>
-      <span class="group-desc">Расписание и сервисы группы</span>
       <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
     </button>
   </div>
@@ -954,6 +1001,12 @@ footer span {
     <div class="new-group-hint">Откроется Telegram, где можно связаться с администратором.</div>
   </div>
 </section>
+<div class="games-modal" id="gamesModal" onclick="if(event.target===this)closeGames()">
+ <div class="games-box">
+  <div class="games-top"><h2>🎮 Мини-игры С-12</h2><button class="game-close" onclick="closeGames()">✕</button></div>
+  <div id="gamesContent"><p class="games-muted">Подключаем Telegram…</p></div>
+ </div>
+</div>
 <div class="container group-hidden" id="c12App">
 
 <button class="group-back" type="button" onclick="backToGroups()">← ВЫБРАТЬ ГРУППУ</button>
@@ -1023,12 +1076,6 @@ footer span {
 </div>
 
 
-<div class="games-modal" id="gamesModal" onclick="if(event.target===this)closeGames()">
- <div class="games-box">
-  <div class="games-top"><h2>🎮 Мини-игры С-12</h2><button class="game-close" onclick="closeGames()">✕</button></div>
-  <div id="gamesContent"><p class="games-muted">Подключаем Telegram…</p></div>
- </div>
-</div>
 <div class="wheel-modal" id="wheelModal" role="dialog" aria-modal="true" aria-labelledby="wheelTitle" onclick="if(event.target===this)closeWheel()">
  <div class="wheel-box">
   <div class="wheel-head"><h2 id="wheelTitle">🎡 Кто моет доску?</h2><button class="wheel-close" type="button" onclick="closeWheel()">✕</button></div>
@@ -1940,9 +1987,20 @@ function renderC33Schedule(){
    '</div></div>').join('')+'</article>';
  }).join('');
 }
+function openGroupList(){
+ document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("groupListView").classList.remove("group-hidden");
+ window.scrollTo(0,0);
+}
+function backToHome(){
+ document.getElementById("groupListView").classList.add("group-hidden");
+ document.getElementById("groupChooser").classList.remove("group-hidden");
+ window.scrollTo(0,0);
+}
 function openGroupC33(){
  c33CurrentWeek=currentWeek;
  document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
  document.getElementById("c12App").classList.add("group-hidden");
  document.getElementById("c33App").classList.remove("group-hidden");
@@ -1951,6 +2009,7 @@ function openGroupC33(){
 
 function openGroupC12(){
  document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
  document.getElementById("c33App").classList.add("group-hidden");
  document.getElementById("c12App").classList.remove("group-hidden");
@@ -1958,6 +2017,7 @@ function openGroupC12(){
 }
 function showNewGroupRequest(){
  document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
  document.getElementById("newGroupView").classList.remove("group-hidden");
  window.scrollTo(0,0);
@@ -1981,6 +2041,7 @@ function renderC33Roster(){
 }
 
 function backToGroups(){
+ document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("c12App").classList.add("group-hidden");
  document.getElementById("c33App").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
