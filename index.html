@@ -871,6 +871,27 @@ footer span {
 .game-rank{display:flex;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--border);font-size:13px}
 @media(max-width:500px){.games-box{padding:16px;margin:5px auto}.memory-card{height:58px}}
 
+
+/* GROUP C-33 SCHEDULE */
+.c33-container{width:min(1100px,92%);margin:auto;padding:22px 0 45px}
+.c33-hero{padding:28px;margin:18px 0 24px;border:1px solid var(--border);border-radius:24px;background:linear-gradient(120deg,rgba(255,66,79,.14),transparent 65%),var(--panel)}
+.c33-hero .eyebrow{color:#ff858d;font-size:10px;font-weight:800;letter-spacing:2px}
+.c33-hero h1{font-size:clamp(30px,6vw,44px);margin:10px 0}
+.c33-hero p{color:var(--muted);font-size:13px}
+.c33-days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.c33-day{padding:20px;background:var(--panel);border:1px solid var(--border);border-radius:18px;min-width:0}
+.c33-day h2{font-size:18px;padding-bottom:13px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.c33-lesson{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.c33-lesson:last-child{border-bottom:0}
+.c33-pair{flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--red-soft);color:#ff858d;font-size:12px;font-weight:800}
+.c33-info{min-width:0;flex:1}
+.c33-subject{font-size:13px;font-weight:800;line-height:1.5}
+.c33-detail{margin-top:7px;padding:8px 10px;border-radius:9px;background:var(--panel2);font-size:11px;line-height:1.55;color:var(--muted)}
+.c33-detail strong{color:var(--text)}
+.c33-week{display:inline-block;margin:0 5px 4px 0;padding:3px 7px;border-radius:6px;background:var(--red-soft);color:#ff858d;font-size:9px;font-weight:800}
+.c33-note{color:var(--muted);font-size:11px;margin-top:18px}
+@media(max-width:650px){.c33-days{grid-template-columns:1fr}.c33-hero{padding:22px}}
+
 </style>
 </head>
 
@@ -881,10 +902,10 @@ footer span {
   <h1>Выбери свою<br><span style="color:var(--red)">группу</span></h1>
   <p class="subtitle">Расписание, замены и всё важное в одном месте</p>
   <div class="group-options">
-    <button class="group-option coming" type="button" onclick="showComingSoon()">
+    <button class="group-option" type="button" onclick="openGroupC33()">
       <span class="group-name">С-33</span>
       <span class="group-desc">Расписание учебной группы</span>
-      <span class="group-status">СКОРО</span>
+      <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
     </button>
     <button class="group-option" type="button" onclick="openGroupC12()">
       <span class="group-name">С-12</span>
@@ -1072,6 +1093,23 @@ footer span {
 </footer>
 
 </div>
+
+
+<section class="c33-container group-hidden" id="c33App">
+  <button class="group-back" type="button" onclick="backToGroups()">← ВЫБРАТЬ ГРУППУ</button>
+  <header>
+    <div class="logo"><div class="logo-icon">✦</div><div>РАСПИСАНИЕ <span>С-33</span></div></div>
+    <div class="header-year">2026 — 2027</div>
+  </header>
+  <section class="c33-hero">
+    <div class="eyebrow">УЧЕБНЫЙ ПОРТАЛ</div>
+    <h1>Расписание <span style="color:var(--red)">С-33</span></h1>
+    <p>Занятия по дням недели · с учётом подгрупп и чередования недель</p>
+  </section>
+  <section class="c33-days" id="c33Days"></section>
+  <p class="c33-note">Красная и белая недели отмечены отдельно там, где расписание отличается. «Нет пары» означает, что занятие для этой подгруппы не проводится.</p>
+  <footer>DESIGNED & BUILT BY <span>SKYROCKETED</span></footer>
+</section>
 
 <script>
 
@@ -1721,9 +1759,61 @@ function karateMove(action){
  if(window.karateTurn===10){setTimeout(()=>awardGame("karate",window.karatePoints),350);}else karateNextStep();
 }
 
+
+const c33Schedule = [
+ {day:"Понедельник",lessons:[
+  {pair:5,subject:"Строительные машины",details:[["Обе подгруппы","Иванов","55"]]},
+  {pair:6,subject:"САПР",details:[["1-я подгруппа","Фокина","68"],["2-я подгруппа","Степанова","69"]]},
+  {pair:7,subject:"САПР",details:[["Красная · 1-я подгруппа","Фокина","68"],["Красная · 2-я подгруппа","Нет пары",""],["Белая неделя","Нет пар",""]]}
+ ]},
+ {day:"Вторник",lessons:[
+  {pair:4,subject:"Архитектура",details:[["Обе подгруппы","Буренкова","72"]]},
+  {pair:5,subject:"Инженерные сети",details:[["Обе подгруппы","Степанова","34"]]},
+  {pair:6,subject:"Инженерные сети / ГРР",details:[["Красная неделя","Степанова · Инженерные сети","34"],["Белая неделя","Ягафарова · ГРР","72"]]},
+  {pair:7,subject:"ГРР",details:[["Обе подгруппы","Ягафарова","72"]]}
+ ]},
+ {day:"Среда",lessons:[
+  {pair:3,subject:"САПР",details:[["1-я подгруппа","Фокина","68"],["2-я подгруппа","Нет пары",""]]},
+  {pair:4,subject:"ОПСК",details:[["Обе подгруппы","Потапова","53"]]},
+  {pair:5,subject:"САПР",details:[["1-я подгруппа","Нет пары",""],["2-я подгруппа","Степанова","71"]]}
+ ]},
+ {day:"Четверг",lessons:[
+  {pair:4,subject:"Физкультура",details:[["Обе подгруппы","Жаров","с/з"]]},
+  {pair:5,subject:"Строительные машины",details:[["Обе подгруппы","Иванов","55"]]},
+  {pair:6,subject:"Архитектура",details:[["1-я подгруппа","Халитова","72б"],["2-я подгруппа","Буренкова","72а"]]},
+  {pair:7,subject:"Архитектура",details:[["1-я подгруппа","Халитова","72б"],["2-я подгруппа","Буренкова","72а"]]}
+ ]},
+ {day:"Пятница",lessons:[
+  {pair:3,subject:"САПР / Архитектура",details:[["Красная · 1-я подгруппа","Нет пары",""],["Красная · 2-я подгруппа","Степанова · САПР","68"],["Белая · 1-я подгруппа","Нет пары",""],["Белая · 2-я подгруппа","Буренкова · Архитектура","72"]]},
+  {pair:4,subject:"ОПСК",details:[["Обе подгруппы","Потапова","53"]]},
+  {pair:5,subject:"ОПСК",details:[["Обе подгруппы","Потапова","53"]]},
+  {pair:6,subject:"Английский язык",details:[["1-я подгруппа","Нигматуллина","82б"],["2-я подгруппа","Ризванова","72а"]]},
+  {pair:7,subject:"Архитектура",details:[["Красная неделя","Нет пары",""],["Белая · 1-я подгруппа","Халитова","72"]]}
+ ]},
+ {day:"Суббота",lessons:[
+  {pair:5,subject:"ОПСК",details:[["Обе подгруппы","Потапова","53"]]},
+  {pair:6,subject:"Инженерные сети",details:[["Обе подгруппы","Степанова","72"]]}
+ ]}
+];
+function renderC33Schedule(){
+ const root=document.getElementById("c33Days");
+ root.innerHTML=c33Schedule.map(day=>'<article class="c33-day"><h2>'+day.day+'</h2>'+
+ day.lessons.map(lesson=>'<div class="c33-lesson"><div class="c33-pair">'+lesson.pair+'</div><div class="c33-info"><div class="c33-subject">'+lesson.subject+'</div>'+
+ lesson.details.map(d=>'<div class="c33-detail"><span class="c33-week">'+d[0]+'</span><strong>'+d[1]+'</strong>'+(d[2]?' · каб. '+d[2]:'')+'</div>').join('')+
+ '</div></div>').join('')+'</article>').join('');
+}
+function openGroupC33(){
+ document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("soonView").classList.add("group-hidden");
+ document.getElementById("c12App").classList.add("group-hidden");
+ document.getElementById("c33App").classList.remove("group-hidden");
+ renderC33Schedule();window.scrollTo(0,0);
+}
+
 function openGroupC12(){
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
+ document.getElementById("c33App").classList.add("group-hidden");
  document.getElementById("c12App").classList.remove("group-hidden");
  window.scrollTo(0,0);
 }
@@ -1734,6 +1824,7 @@ function showComingSoon(){
 }
 function backToGroups(){
  document.getElementById("c12App").classList.add("group-hidden");
+ document.getElementById("c33App").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
  document.getElementById("groupChooser").classList.remove("group-hidden");
  window.scrollTo(0,0);
