@@ -157,8 +157,24 @@ def process_updates(state: dict) -> None:
             send_message(chat_id, answer)
 
 
+def format_replacements(text: str) -> str:
+    # В расписании колледжа используем "пара", а не "урок".
+    replacements = {
+        "уроков": "пар",
+        "уроками": "парами",
+        "уроках": "парах",
+        "уроку": "паре",
+        "уроком": "парой",
+        "урока": "пары",
+        "уроки": "пары",
+        "урок": "пара",
+    }
+    pattern = re.compile(r"уроков|уроками|уроках|уроку|уроком|урока|уроки|урок", re.IGNORECASE)
+    return pattern.sub(lambda match: replacements[match.group(0).lower()], text)
+
+
 def check_replacements(state: dict) -> None:
-    current = fetch_group_replacements()
+    current = format_replacements(fetch_group_replacements())
     previous = state.get("snapshot")
     if previous is None:
         state["snapshot"] = current
