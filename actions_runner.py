@@ -1,4 +1,5 @@
 import base64
+from datetime import date, timedelta
 import hashlib
 import json
 import logging
@@ -75,8 +76,82 @@ def telegram(method: str, payload: dict) -> dict:
     return result["result"]
 
 
-def send_message(chat_id: int, text: str) -> None:
-    telegram("sendMessage", {"chat_id": chat_id, "text": text[:MAX_TELEGRAM_TEXT]})
+def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> None:
+    payload = {"chat_id": chat_id, "text": text[:MAX_TELEGRAM_TEXT]}
+    if reply_markup is not None:
+        payload["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
+    telegram("sendMessage", payload)
+
+
+GROUP_STUDENTS = [
+    "Адиятов Амир Артурович",
+    "Баталов Данил Айратович",
+    "Батеева Виктория Руслановна",
+    "Борисова Мария Артемовна",
+    "Габитова Зульфия Ильдаровна",
+    "Динисламова Резеда Шарифовна",
+    "Хабибрахманов Таир Рустемович",
+    "Ишмурзина Найля Азатовна",
+    "Казин Расуль Залилович",
+    "Касимов Гайсар Гайнанович",
+    "Мухарямова Александра Денисовна",
+    "Низамутдинова Маргарита Рафисовна",
+    "Николаев Арсений Леонидович",
+    "Родина Арина Артемовна",
+    "Рублев Илья Владимирович",
+    "Суфьянова Вилена Ильмировна",
+    "Швевель Милена Фёдоровна",
+    "Бобков Макар Сергеевич",
+    "Васильева Арина Александровна",
+    "Гафиятуллин Денис Рафисович",
+    "Дронь Валерий Юрьевич",
+    "Ерыкалин Кирилл Анатольевич",
+    "Ишмуратов Радмир Русланович",
+    "Камаев Савелий Константинович",
+    "Клименко Кирилл Сергеевич",
+    "Мусин Тимур Артурович",
+    "Русеков Роман Евгеньевич",
+    "Сайфуллин Амир Рамилевич",
+    "Сенькин Артем Павлович",
+    "Сукбаев Мирон Артурович",
+    "Уразгулова Камилла Айнуровна",
+    "Фаизов Вильдан Артурович",
+    "Мухаматдяров Глеб Константинович",
+    "Пучков Григорий Константинович",
+]
+DUTY_ANCHOR_DATE = date(2026, 11, 12)  # В этот день дежурил Николаев Арсений.
+DUTY_ANCHOR_INDEX = GROUP_STUDENTS.index("Николаев Арсений Леонидович")
+MENU_KEYBOARD = {
+    "keyboard": [[{"text": "📋 Список группы"}]],
+    "resize_keyboard": True,
+    "is_persistent": True,
+}
+
+
+def duty_student(target: date) -> str | None:
+    if target < DUTY_ANCHOR_DATE:
+        return None
+    school_days = 0
+    current = DUTY_ANCHOR_DATE
+    while current < target:
+        current += timedelta(days=1)
+        if current.weekday() != 6:  # Воскресенье — без дежурства.
+            school_days += 1
+    if target.weekday() == 6:
+        return None
+    return GROUP_STUDENTS[(DUTY_ANCHOR_INDEX + school_days) % len(GROUP_STUDENTS)]
+
+
+def group_list_message(target: date | None = None) -> str:
+    target = target or date.today()
+    duty = duty_student(target)
+    lines = ["📋 Список группы С-12", ""]
+    for index, student in enumerate(GROUP_STUDENTS, start=1):
+        marker = " ⭐ ДЕЖУРНЫЙ" if student == duty else ""
+        lines.append(f"{index}. {student}{marker}")
+    lines.extend(["", f"👤 Дежурный на сегодня: {duty}" if duty else
+                  "Сегодня воскресенье — дежурства нет."])
+    return "\n".join(lines)
 
 
 def fetch_group_replacements() -> str:
@@ -142,7 +217,10 @@ def process_updates(state: dict) -> None:
             send_message(
                 chat_id,
                 "🔔 Готово! Ты подписан(а) на уведомления группы С-12.\n"
-                "Я буду сообщать о новых заменах. Чтобы отключить уведомления, отправь /stop.",
+                "Я буду сообщать о новых заменах.\n"
+                "Нажми «📋 Список группы», чтобы увидеть список и дежурного. "
+                "Чтобы отключить уведомления, отправь /stop.",
+                MENU_KEYBOARD,
             )
         elif command == "/stop":
             state["subscribers"] = [
@@ -154,7 +232,9 @@ def process_updates(state: dict) -> None:
                 answer = "✅ Ты подписан(а) на уведомления С-12."
             else:
                 answer = "Подписки нет. Отправь /start, чтобы получать уведомления."
-            send_message(chat_id, answer)
+            send_message(chat_id, answer, MENU_KEYBOARD)
+        elif text == "📋 Список группы":
+            send_message(chat_id, group_list_message(), MENU_KEYBOARD)
 
 
 def format_replacements(text: str) -> str:
