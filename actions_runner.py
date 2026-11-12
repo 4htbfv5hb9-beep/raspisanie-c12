@@ -17,6 +17,7 @@ from cryptography.fernet import Fernet, InvalidToken
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 STATE_PATH = Path("data/state.enc")
 REPLACEMENTS_URL = "https://bask-rb.ru/%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D1%8B"
+REPLACEMENTS_URL_C33 = "https://bask-rb.ru/%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D1%8B-2"
 CHECK_INTERVAL_SECONDS = 5 * 60
 MAX_TELEGRAM_TEXT = 4000
 WORKER_URL = os.environ.get("WORKER_URL", "").rstrip("/")
@@ -37,7 +38,7 @@ def cipher() -> Fernet:
 
 def load_state() -> dict:
     if not STATE_PATH.exists():
-        return {"offset": 0, "subscribers": [], "snapshot": None, "last_check": 0}
+        return {"offset": 0, "subscribers": [], "snapshot": None, "snapshot_c33": None, "last_check": 0}
     try:
         raw = cipher().decrypt(STATE_PATH.read_bytes())
         state = json.loads(raw.decode("utf-8"))
@@ -46,6 +47,7 @@ def load_state() -> dict:
         state.setdefault("offset", 0)
         state.setdefault("subscribers", [])
         state.setdefault("snapshot", None)
+        state.setdefault("snapshot_c33", None)
         state.setdefault("last_check", 0)
         return state
     except (InvalidToken, ValueError, json.JSONDecodeError) as exc:
@@ -122,9 +124,9 @@ def sync_subscribers_with_worker(state: dict) -> None:
     logger.info("Синхронизировано подписчиков с Cloudflare: %d", result.get("count", 0))
 
 
-def notify_subscribers(text: str, state: dict) -> None:
+def notify_subscribers(text: str, state: dict, group: str = "C12") -> None:
     if WORKER_URL:
-        result = worker_post("/internal/notify", {"text": text[:MAX_TELEGRAM_TEXT]})
+        result = worker_post("/internal/notify", {"text": text[:MAX_TELEGRAM_TEXT], "group": group})
         logger.info("Уведомление отправлено через Cloudflare: %d/%d",
                     result.get("sent", 0), result.get("total", 0))
         return
@@ -206,9 +208,10 @@ def group_list_message(target: date | None = None) -> str:
     return "\n".join(lines)
 
 
-def fetch_group_replacements() -> str:
+def fetch_group_replacements(group: str = "С-12") -> str:
+    url = REPLACEMENTS_URL_C33 if group == "С-33" else REPLACEMENTS_URL
     request = urllib.request.Request(
-        REPLACEMENTS_URL,
+        url,
         headers={"User-Agent": "Mozilla/5.0 (compatible; RaspisanieC12Bot/1.0)"},
     )
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -216,30 +219,30 @@ def fetch_group_replacements() -> str:
 
     soup = BeautifulSoup(html, "html.parser")
     lines = [
-        re.sub(r"\s+", " ", line).strip()
-        for line in soup.get_text("\n").replace("\xa0", " ").splitlines()
+        re.sub(r"\\s+", " ", line).strip()
+        for line in soup.get_text("\\n").replace("\\xa0", " ").splitlines()
     ]
     lines = [line for line in lines if line]
 
     start = None
+    target_pattern = re.compile(rf"^{re.escape(group)}(?:\\s|\\||$)", re.IGNORECASE)
     for index, line in enumerate(lines):
-        if re.match(r"^С[-‑–]12(?:\s|\||$)", line, re.IGNORECASE):
+        if target_pattern.match(line):
             start = index
             break
     if start is None:
-        raise ValueError("Не удалось найти группу С-12 на странице замен")
+        raise ValueError(f"Не удалось найти группу {group} на странице замен")
 
     section = [lines[start]]
     group_pattern = re.compile(
-        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\d{2}(?:\s|\||$)",
+        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\\d{2}(?:\\s|\\||$)",
         re.IGNORECASE,
     )
     for line in lines[start + 1:]:
         if group_pattern.match(line):
             break
         section.append(line)
-    return "\n".join(section)
-
+    return "\\n".join(section)
 
 def process_updates(state: dict) -> None:
     updates = telegram(
@@ -306,23 +309,30 @@ def format_replacements(text: str) -> str:
 
 
 def check_replacements(state: dict) -> None:
-    current = format_replacements(fetch_group_replacements())
-    previous = state.get("snapshot")
-    if previous is None:
-        state["snapshot"] = current
-        logger.info("Сохранён начальный снимок замен С-12; старые изменения не рассылаются")
-    elif previous != current:
-        message = (
-            "📢 Изменения в заменах группы С-12!\n\n"
-            f"{current}\n\nИсточник: {REPLACEMENTS_URL}"
-        )
-        notify_subscribers(message, state)
-        state["snapshot"] = current
-        logger.info("Обнаружено изменение; уведомления отправлены подписчикам")
-    else:
-        logger.info("Изменений в заменах С-12 нет")
+    checks = [
+        ("С-12", "snapshot", REPLACEMENTS_URL, "C12"),
+        ("С-33", "snapshot_c33", REPLACEMENTS_URL_C33, "C33"),
+    ]
+    for group, snapshot_key, source_url, group_code in checks:
+        try:
+            current = format_replacements(fetch_group_replacements(group))
+            previous = state.get(snapshot_key)
+            if previous is None:
+                state[snapshot_key] = current
+                logger.info("Сохранён начальный снимок замен %s; старые изменения не рассылаются", group)
+            elif previous != current:
+                message = (
+                    f"📢 Изменения в заменах группы {group}!\\n\\n"
+                    f"{current}\\n\\nИсточник: {source_url}"
+                )
+                notify_subscribers(message, state, group_code)
+                state[snapshot_key] = current
+                logger.info("Обнаружено изменение %s; уведомления отправлены", group)
+            else:
+                logger.info("Изменений в заменах %s нет", group)
+        except Exception:
+            logger.exception("Не удалось проверить страницу замен %s; следующая попытка будет позже", group)
     state["last_check"] = int(time.time())
-
 
 def main() -> None:
     state = load_state()
