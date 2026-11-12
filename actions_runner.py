@@ -97,8 +97,18 @@ def worker_post(path: str, payload: dict | None = None) -> dict:
         },
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=35) as response:
-        result = json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=35) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        # Log only the response body and status; never print request headers or BOT_TOKEN.
+        try:
+            response_body = exc.read().decode("utf-8", errors="replace")[:500]
+        except Exception:
+            response_body = "<response body unavailable>"
+        logger.error("Cloudflare Worker returned HTTP %s for %s: %s",
+                     exc.code, path, response_body)
+        raise
     if not result.get("ok"):
         raise RuntimeError(f"Worker operation failed: {result}")
     return result
