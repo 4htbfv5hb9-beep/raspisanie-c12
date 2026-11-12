@@ -202,8 +202,22 @@ async function handleTelegramUpdate(update, env) {
       : "Подписки нет. Отправь /start, чтобы получать уведомления.");
   } else if (text === "📋 Список группы" || command === "/list") {
     await sendText(env, chatId, groupListMessage());
+  } else if (command === "/help") {
+    await sendText(env, chatId,
+      "Привет! Я бот расписания ГАПОУ БАСКА\n\n" +
+      "Команды:\n\n" +
+      "/start — подписаться на уведомления\n\n" +
+      "/stop — отписаться\n\n" +
+      "/status — проверить подписку\n\n" +
+      "/list — список группы и дежурный");
   } else {
-    await sendText(env, chatId, "Привет! Я бот расписания С-12.\n\nКоманды:\n/start — подписаться на уведомления\n/stop — отписаться\n/status — проверить подписку\n/list — список группы и дежурный");
+    await sendText(env, chatId,
+      "Привет! Я бот расписания ГАПОУ БАСКА\n\n" +
+      "Команды:\n\n" +
+      "/start — подписаться на уведомления\n\n" +
+      "/stop — отписаться\n\n" +
+      "/status — проверить подписку\n\n" +
+      "/list — список группы и дежурный");
   }
 }
 
