@@ -179,6 +179,14 @@ async function handleTelegramUpdate(update, env) {
     const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
     await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers.filter(id => id !== chatId)));
     await sendText(env, chatId, "Уведомления отключены. Чтобы снова подписаться, отправь /start.");
+  } else if (command === "/stats") {
+    if (Number(message.from.id) !== ADMIN_TELEGRAM_ID) {
+      await sendText(env, chatId, "⛔ Эта команда доступна только администратору.");
+      return;
+    }
+    const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
+    await sendText(env, chatId,
+      `📊 Статистика бота\n\n🔔 Подписано на уведомления: ${subscribers.length} человек`);
   } else if (command === "/status") {
     const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
     await sendText(env, chatId, subscribers.includes(chatId)
