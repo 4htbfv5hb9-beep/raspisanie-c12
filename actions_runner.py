@@ -219,13 +219,13 @@ def fetch_group_replacements(group: str = "С-12") -> str:
 
     soup = BeautifulSoup(html, "html.parser")
     lines = [
-        re.sub(r"\\s+", " ", line).strip()
-        for line in soup.get_text("\\n").replace("\\xa0", " ").splitlines()
+        re.sub(r"\s+", " ", line).strip()
+        for line in soup.get_text("\n").replace("\xa0", " ").splitlines()
     ]
     lines = [line for line in lines if line]
 
     start = None
-    target_pattern = re.compile(rf"^{re.escape(group)}(?:\\s|\\||$)", re.IGNORECASE)
+    target_pattern = re.compile(rf"^{re.escape(group)}(?:\s|\||$)", re.IGNORECASE)
     for index, line in enumerate(lines):
         if target_pattern.match(line):
             start = index
@@ -235,14 +235,14 @@ def fetch_group_replacements(group: str = "С-12") -> str:
 
     section = [lines[start]]
     group_pattern = re.compile(
-        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\\d{2}(?:\\s|\\||$)",
+        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\d{2}(?:\s|\||$)",
         re.IGNORECASE,
     )
     for line in lines[start + 1:]:
         if group_pattern.match(line):
             break
         section.append(line)
-    return "\\n".join(section)
+    return "\n".join(section)
 
 def process_updates(state: dict) -> None:
     updates = telegram(
