@@ -94,6 +94,7 @@ def worker_post(path: str, payload: dict | None = None) -> dict:
         headers={
             "Authorization": f"Bearer {BOT_TOKEN}",
             "Content-Type": "application/json",
+            "User-Agent": "c12-schedule-bot/1.0 (+https://github.com/4htbfv5hb9-beep/raspisanie-c12)",
         },
         method="POST",
     )
