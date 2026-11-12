@@ -211,6 +211,63 @@ header {
     transform: translateY(-2px);
 }
 
+.roster-button {
+    cursor: pointer;
+}
+
+.roster-panel {
+    display: none;
+    margin: -12px 0 30px;
+    padding: 22px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.roster-panel.open {
+    display: block;
+    animation: appear .3s ease both;
+}
+
+.roster-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 18px;
+    margin-top: 16px;
+}
+
+.roster-item {
+    padding: 10px 12px;
+    background: var(--panel2);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.roster-item.duty {
+    color: var(--text);
+    border-color: rgba(255,66,79,.5);
+    background: var(--red-soft);
+    font-weight: 800;
+}
+
+.duty-note {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--red-soft);
+    color: #ff858d;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+@media (max-width: 560px) {
+    .roster-list {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* SECTION */
 
 .section-heading {
@@ -586,7 +643,20 @@ footer span {
         📢 Замены <span>↗</span>
     </a>
 
+    <button class="replace-button roster-button" id="rosterBtn" type="button" onclick="toggleRoster()">
+        📋 Список группы
+    </button>
+
 </div>
+
+<section class="roster-panel" id="rosterPanel" aria-live="polite">
+    <div class="section-heading" style="margin-top:0">
+        <h2>Список группы С-12</h2>
+        <span>34 СТУДЕНТА</span>
+    </div>
+    <div class="duty-note" id="dutyNote"></div>
+    <div class="roster-list" id="rosterList"></div>
+</section>
 
 <div class="section-heading">
     <h2>Расписание звонков</h2>
@@ -760,6 +830,87 @@ red: [
 };
 
 let currentWeek = "white";
+
+const groupStudents = [
+    "Адиятов Амир Артурович",
+    "Баталов Данил Айратович",
+    "Батеева Виктория Руслановна",
+    "Борисова Мария Артемовна",
+    "Габитова Зульфия Ильдаровна",
+    "Динисламова Резеда Шарифовна",
+    "Хабибрахманов Таир Рустемович",
+    "Ишмурзина Найля Азатовна",
+    "Казин Расуль Залилович",
+    "Касимов Гайсар Гайнанович",
+    "Мухарямова Александра Денисовна",
+    "Низамутдинова Маргарита Рафисовна",
+    "Николаев Арсений Леонидович",
+    "Родина Арина Артемовна",
+    "Рублев Илья Владимирович",
+    "Суфьянова Вилена Ильмировна",
+    "Швевель Милена Фёдоровна",
+    "Бобков Макар Сергеевич",
+    "Васильева Арина Александровна",
+    "Гафиятуллин Денис Рафисович",
+    "Дронь Валерий Юрьевич",
+    "Ерыкалин Кирилл Анатольевич",
+    "Ишмуратов Радмир Русланович",
+    "Камаев Савелий Константинович",
+    "Клименко Кирилл Сергеевич",
+    "Мусин Тимур Артурович",
+    "Русеков Роман Евгеньевич",
+    "Сайфуллин Амир Рамилевич",
+    "Сенькин Артем Павлович",
+    "Сукбаев Мирон Артурович",
+    "Уразгулова Камилла Айнуровна",
+    "Фаизов Вильдан Артурович",
+    "Мухаматдяров Глеб Константинович",
+    "Пучков Григорий Константинович"
+];
+
+// 12 ноября 2026 года дежурил Николаев Арсений (13-й в списке).
+const dutyAnchor = new Date(2026, 10, 12);
+const dutyAnchorIndex = groupStudents.indexOf("Николаев Арсений Леонидович");
+
+function getDutyStudent(day) {
+    const target = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    if (target < dutyAnchor || target.getDay() === 0) return null;
+    let shifts = 0;
+    const cursor = new Date(dutyAnchor);
+    while (cursor < target) {
+        cursor.setDate(cursor.getDate() + 1);
+        if (cursor.getDay() !== 0) shifts++;
+    }
+    return groupStudents[(dutyAnchorIndex + shifts) % groupStudents.length];
+}
+
+function toggleRoster() {
+    const panel = document.getElementById("rosterPanel");
+    const button = document.getElementById("rosterBtn");
+    const opening = !panel.classList.contains("open");
+    panel.classList.toggle("open", opening);
+    button.setAttribute("aria-expanded", String(opening));
+    button.textContent = opening ? "✕ Закрыть список" : "📋 Список группы";
+    if (opening) renderRoster();
+}
+
+function renderRoster() {
+    const now = new Date();
+    const duty = getDutyStudent(now);
+    const list = document.getElementById("rosterList");
+    const note = document.getElementById("dutyNote");
+    if (duty) {
+        note.textContent = "⭐ Сегодня дежурный: " + duty;
+    } else {
+        note.textContent = "Сегодня воскресенье — дежурства нет.";
+    }
+    list.innerHTML = groupStudents.map((student, index) => {
+        const isDuty = student === duty;
+        return '<div class="roster-item' + (isDuty ? ' duty' : '') + '">' +
+            (index + 1) + '. ' + student + (isDuty ? '  ⭐ ДЕЖУРНЫЙ' : '') +
+            '</div>';
+    }).join("");
+}
 
 
 function renderSchedule() {
