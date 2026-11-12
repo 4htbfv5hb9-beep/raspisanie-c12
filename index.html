@@ -262,6 +262,35 @@ header {
     font-weight: 800;
 }
 
+.curator-card, .leaders-card {
+    padding: 14px 16px;
+    border: 1px solid rgba(255,66,79,.25);
+    border-radius: 13px;
+    background: linear-gradient(110deg, rgba(255,66,79,.10), var(--panel2));
+}
+.curator-card { margin-bottom: 12px; }
+.leaders-card { margin: 12px 0 16px; }
+.roster-role-title {
+    color: #ff858d;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    margin-bottom: 8px;
+}
+.roster-role-line {
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.7;
+}
+.roster-role-line strong { color: #ff858d; }
+.roster-item .role-tag {
+    display: inline-block;
+    margin-left: 6px;
+    color: #ff858d;
+    font-size: 10px;
+    font-weight: 800;
+}
+
 @media (max-width: 560px) {
     .roster-list {
         grid-template-columns: 1fr;
@@ -650,9 +679,20 @@ footer span {
 </div>
 
 <section class="roster-panel" id="rosterPanel" aria-live="polite">
+    <div class="curator-card">
+        <div class="roster-role-title">КУРАТОР ГРУППЫ</div>
+        <div class="roster-role-line">👩‍🏫 <strong>Фокина Александра Дмитриевна</strong></div>
+    </div>
     <div class="section-heading" style="margin-top:0">
         <h2>Список группы С-12</h2>
         <span>34 СТУДЕНТА</span>
+    </div>
+    <div class="leaders-card">
+        <div class="roster-role-title">СТАРОСТЫ И ЗАМЕСТИТЕЛИ</div>
+        <div class="roster-role-line">⭐ Староста: <strong>Фаизов Вильдан Артурович</strong></div>
+        <div class="roster-role-line">↳ Заместитель: Клименко Кирилл Сергеевич</div>
+        <div class="roster-role-line">⭐ Староста: <strong>Васильева Арина Александровна</strong></div>
+        <div class="roster-role-line">↳ Заместитель: Динисламова Резеда Шарифовна</div>
     </div>
     <div class="duty-note" id="dutyNote"></div>
     <div class="roster-list" id="rosterList"></div>
@@ -904,10 +944,17 @@ function renderRoster() {
     } else {
         note.textContent = "Сегодня воскресенье — дежурства нет.";
     }
+    const roles = {
+        "Фаизов Вильдан Артурович": "⭐ СТАРОСТА",
+        "Васильева Арина Александровна": "⭐ СТАРОСТА",
+        "Клименко Кирилл Сергеевич": "ЗАМЕСТИТЕЛЬ ВИЛЬДАНА",
+        "Динисламова Резеда Шарифовна": "ЗАМЕСТИТЕЛЬ АРИНЫ"
+    };
     list.innerHTML = groupStudents.map((student, index) => {
         const isDuty = student === duty;
+        const role = roles[student] ? ' <span class="role-tag">· ' + roles[student] + '</span>' : '';
         return '<div class="roster-item' + (isDuty ? ' duty' : '') + '">' +
-            (index + 1) + '. ' + student + (isDuty ? '  ⭐ ДЕЖУРНЫЙ' : '') +
+            (index + 1) + '. ' + student + role + (isDuty ? '  ⭐ ДЕЖУРНЫЙ' : '') +
             '</div>';
     }).join("");
 }
