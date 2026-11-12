@@ -113,10 +113,11 @@ async function telegram(env, method, payload) {
   return result.result;
 }
 
-async function sendText(env, chatId, text) {
+async function sendText(env, chatId, text, parseMode = null) {
   return telegram(env, "sendMessage", {
     chat_id: chatId,
     text,
+    ...(parseMode ? { parse_mode: parseMode } : {}),
     reply_markup: {
       keyboard: [[{ text: "📋 Список группы" }]],
       resize_keyboard: true,
@@ -172,9 +173,16 @@ async function handleTelegramUpdate(update, env) {
     if (!subscribers.includes(chatId)) subscribers.push(chatId);
     await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers));
     await sendText(env, chatId,
-      "🔔 Готово! Ты подписан(а) на личные уведомления ГАПОУ БАСК\n\n" +
-      "Я буду присылать сообщения о новых заменах и изменениях расписания.\n" +
-      "Чтобы отключить уведомления, отправь /stop.");
+      "🔴 *РАСПИСАНИЕ ГАПОУ БАСКА*\n\n" +
+      "Добро пожаловать! 👋\n\n" +
+      "Рад видеть тебя в официальном боте расписания групп на 2026–2027 учебный год.\n\n" +
+      "Здесь ты можешь:\n\n" +
+      "📅 Смотреть расписание занятий.\n\n" +
+      "🗓 Узнавать расписание на сегодня.\n\n" +
+      "🔔 Проверять время звонков.\n\n" +
+      "📢 Смотреть актуальные замены.\n\n" +
+      "Всё необходимое для учёбы — в одном месте.",
+      "Markdown");
   } else if (command === "/stop") {
     const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
     await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers.filter(id => id !== chatId)));
