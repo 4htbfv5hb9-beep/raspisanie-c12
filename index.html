@@ -830,6 +830,7 @@ footer span {
 .home-feature-main strong{font-size:18px;font-weight:800}
 .home-feature-main small{color:var(--muted);font-size:12px;line-height:1.5}
 .home-feature-arrow{color:#ff858d;font-size:25px;font-weight:800}
+.wheel-feature{border-color:rgba(255,190,90,.35);background:linear-gradient(110deg,rgba(240,165,45,.15),transparent 70%),var(--panel)}
 .games-feature{border-color:rgba(255,66,79,.38);background:linear-gradient(110deg,rgba(255,66,79,.2),transparent 70%),var(--panel)}
 .new-feature{background:linear-gradient(110deg,rgba(255,255,255,.06),transparent 70%),var(--panel)}
 .group-list-view{padding-top:8vh}
@@ -932,6 +933,15 @@ footer span {
   <div class="brand">УЧЕБНЫЙ ПОРТАЛ · ГАПОУ БАСКА</div>
   <h1>Всё для учёбы<br><span style="color:var(--red)">в одном месте</span></h1>
   <p class="subtitle">Выбери нужный раздел приложения</p>
+
+  <button class="home-feature wheel-feature" type="button" onclick="openWheel()">
+    <span class="home-feature-icon">🎡</span>
+    <span class="home-feature-main">
+      <strong>Колесо фортуны</strong>
+      <small>Выбери группу и узнай, кто сегодня моет доску</small>
+    </span>
+    <span class="home-feature-arrow">→</span>
+  </button>
 
   <button class="home-feature games-feature" type="button" onclick="openGames()">
     <span class="home-feature-icon">👾</span>
@@ -1079,13 +1089,23 @@ footer span {
 <div class="wheel-modal" id="wheelModal" role="dialog" aria-modal="true" aria-labelledby="wheelTitle" onclick="if(event.target===this)closeWheel()">
  <div class="wheel-box">
   <div class="wheel-head"><h2 id="wheelTitle">🎡 Кто моет доску?</h2><button class="wheel-close" type="button" onclick="closeWheel()">✕</button></div>
-  <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Крути колесо — оно случайно выберет одного человека из группы С-12.</p>
-  <div class="wheel-pointer">🔻</div>
-  <div class="wheel-stage"><canvas id="wheelCanvas" width="700" height="700"></canvas><div class="wheel-center">🎡</div></div>
-  <button class="wheel-spin" id="wheelSpin" type="button" onclick="spinWheel()">КРУТИТЬ КОЛЕСО</button>
-  <div class="wheel-result" id="wheelResult" aria-live="polite">Кто сегодня дежурит у доски? 🤔</div>
-  <div class="wheel-roster-title">ВСЕ УЧАСТНИКИ — 34 ЧЕЛОВЕКА</div>
-  <div class="wheel-roster" id="wheelRoster"></div>
+  <div id="wheelGroupPicker">
+   <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Сначала выбери группу — колесо случайно определит, кто сегодня моет доску.</p>
+   <div class="games-grid">
+    <button class="game-tile" onclick="selectWheelGroup('C12')">🔴 С-12<span>34 студента</span></button>
+    <button class="game-tile" onclick="selectWheelGroup('C33')">🔵 С-33<span>28 студентов</span></button>
+   </div>
+  </div>
+  <div id="wheelGame" class="group-hidden">
+   <button class="game-close" type="button" onclick="backToWheelGroups()">← Выбрать другую группу</button>
+   <p id="wheelGroupCaption" style="color:var(--muted);font-size:12px;margin:12px 0">Группа</p>
+   <div class="wheel-pointer">🔻</div>
+   <div class="wheel-stage"><canvas id="wheelCanvas" width="700" height="700"></canvas><div class="wheel-center">🎡</div></div>
+   <button class="wheel-spin" id="wheelSpin" type="button" onclick="spinWheel()">КРУТИТЬ КОЛЕСО</button>
+   <div class="wheel-result" id="wheelResult" aria-live="polite">Кто сегодня моет доску? 🤔</div>
+   <div class="wheel-roster-title" id="wheelRosterTitle">ВСЕ УЧАСТНИКИ</div>
+   <div class="wheel-roster" id="wheelRoster"></div>
+  </div>
  </div>
 </div>
 
@@ -1817,24 +1837,31 @@ setInterval(updateC33Dashboard, 1000);
 
 
 const GAMES_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/games";
-let gameProfile=null,gameBusy=false;
+let gameProfile=null,gameBusy=false,gameGroup="C12";
+function gameStudents(){return gameGroup==="C33"?c33Students:groupStudents;}
 async function gamesRequest(payload){
  const initData=window.Telegram?.WebApp?.initData||"";
- const res=await fetch(GAMES_API,{method:payload?"POST":"GET",headers:{"Content-Type":"application/json"},body:payload?JSON.stringify({...payload,initData}):undefined});
+ const url=payload?GAMES_API:GAMES_API+"?group="+encodeURIComponent(gameGroup);
+ const res=await fetch(url,{method:payload?"POST":"GET",headers:{"Content-Type":"application/json"},body:payload?JSON.stringify({...payload,group:gameGroup,initData}):undefined});
  const data=await res.json();if(!res.ok)throw new Error(data.error||"Ошибка сервера");return data;
 }
-function openGames(){document.getElementById("gamesModal").classList.add("open");document.body.style.overflow="hidden";window.Telegram?.WebApp?.ready();window.Telegram?.WebApp?.expand();loadGames();}
+function openGames(){document.getElementById("gamesModal").classList.add("open");document.body.style.overflow="hidden";window.Telegram?.WebApp?.ready();window.Telegram?.WebApp?.expand();showGameGroupPicker();}
 function closeGames(){document.getElementById("gamesModal").classList.remove("open");document.body.style.overflow="";}
+function showGameGroupPicker(){
+ gameProfile=null;
+ document.getElementById("gamesContent").innerHTML='<p class="games-muted">Выбери группу, чтобы открыть игры и рейтинг.</p><div class="games-grid"><button class="game-tile" onclick="selectGameGroup(\'C12\')">🔴 С-12<span>Игры и рейтинг группы</span></button><button class="game-tile" onclick="selectGameGroup(\'C33\')">🔵 С-33<span>Игры и рейтинг группы</span></button></div>';
+}
+async function selectGameGroup(group){gameGroup=group;await loadGames();}
 async function loadGames(){
  const el=document.getElementById("gamesContent");el.innerHTML='<p class="games-muted">Загружаем профиль и рейтинг…</p>';
  try{
-  if(!window.Telegram?.WebApp?.initData){el.innerHTML='<p class="games-muted">Чтобы привязать профиль, открой расписание через Telegram-бота, а не в обычном браузере.</p>';return;}
+  if(!window.Telegram?.WebApp?.initData){el.innerHTML='<p class="games-muted">Чтобы играть и сохранять баллы, открой расписание через Telegram-бота, а не в обычном браузере.</p><button class="game-close" onclick="showGameGroupPicker()">← Назад</button>';return;}
   const data=await gamesRequest();
   const me=await gamesRequest({action:"whoami"});
   gameProfile=me.student||null;
-  if(!gameProfile){el.innerHTML='<h3>Первый вход</h3><p class="games-muted">Выбери своё полное имя. Оно закрепится за твоим Telegram-аккаунтом.</p><select id="gameStudent" class="games-field"><option value="">Выбери фамилию и имя</option>'+groupStudents.map(n=>'<option>'+n+'</option>').join("")+'</select><button class="games-primary" onclick="registerGameProfile()">Привязать Telegram</button><p class="games-muted" id="gameError"></p>';return;}
+  if(!gameProfile){el.innerHTML='<button class="game-close" onclick="showGameGroupPicker()">← Выбрать группу</button><h3>Первый вход · '+(gameGroup==="C33"?"С-33":"С-12")+'</h3><p class="games-muted">Выбери своё полное имя. Оно закрепится за твоим Telegram-аккаунтом в выбранной группе.</p><select id="gameStudent" class="games-field"><option value="">Выбери фамилию и имя</option>'+gameStudents().map(n=>'<option>'+n+'</option>').join("")+'</select><button class="games-primary" onclick="registerGameProfile()">Привязать Telegram</button><p class="games-muted" id="gameError"></p>';return;}
   renderGameHome(data.leaderboard||[]);
- }catch(e){el.innerHTML='<p class="games-muted">'+escapeGameText(e.message)+'</p><button class="games-primary" onclick="loadGames()">Повторить</button>';}
+ }catch(e){el.innerHTML='<p class="games-muted">'+escapeGameText(e.message)+'</p><button class="games-primary" onclick="loadGames()">Повторить</button><button class="game-close" onclick="showGameGroupPicker()">Выбрать группу</button>';}
 }
 function escapeGameText(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 async function registerGameProfile(){
@@ -1844,7 +1871,7 @@ async function registerGameProfile(){
 function renderGameHome(ranking){
  const mine=ranking.find(x=>x.student===gameProfile)?.score||0;
  const place=ranking.findIndex(x=>x.student===gameProfile)+1;
- document.getElementById("gamesContent").innerHTML='<div class="games-stat">👤 '+escapeGameText(gameProfile)+'<br>🏆 Баллы: <b>'+mine+'</b> · Место: <b>'+(place||"—")+'</b></div><div class="games-grid"><button class="game-tile" onclick="startMemory()">🧠 Память<span>Найди все пары карточек</span></button><button class="game-tile" onclick="startDarts()">🎯 Дартс<span>Пять бросков в мишень</span></button><button class="game-tile" onclick="startKarate()">🥋 Каратэ<span>Руби деревья и уворачивайся</span></button></div><h3>🏅 Рейтинг группы</h3><div>'+ranking.map((x,i)=>'<div class="game-rank"><span>'+(i+1)+'. '+escapeGameText(x.student)+(x.student===gameProfile?' (ты)':'')+'</span><b>'+x.score+'</b></div>').join("")+'</div><button class="game-close" style="margin-top:14px" onclick="loadGames()">Обновить рейтинг</button>';
+ document.getElementById("gamesContent").innerHTML='<div class="games-top"><button class="game-close" onclick="showGameGroupPicker()">← Группы</button><span class="games-muted">'+(gameGroup==="C33"?"ГРУППА С-33":"ГРУППА С-12")+'</span></div><div class="games-stat">👤 '+escapeGameText(gameProfile)+'<br>🏆 Баллы: <b>'+mine+'</b> · Место: <b>'+(place||"—")+'</b></div><div class="games-grid"><button class="game-tile" onclick="startMemory()">🧠 Память<span>Найди все пары карточек</span></button><button class="game-tile" onclick="startDarts()">🎯 Дартс<span>Пять бросков в мишень</span></button><button class="game-tile" onclick="startKarate()">🥋 Каратэ<span>Руби деревья и уворачивайся</span></button></div><h3>🏅 Рейтинг '+(gameGroup==="C33"?"С-33":"С-12")+'</h3><div>'+ranking.map((x,i)=>'<div class="game-rank"><span>'+(i+1)+'. '+escapeGameText(x.student)+(x.student===gameProfile?' (ты)':'')+'</span><b>'+x.score+'</b></div>').join("")+'</div><button class="game-close" style="margin-top:14px" onclick="loadGames()">Обновить рейтинг</button>';
 }
 async function awardGame(game,points){
  try{const result=await gamesRequest({action:"score",game,points});alert('+'+result.added+' баллов! Всего: '+result.total);loadGames();}
@@ -2055,14 +2082,16 @@ function showScoreSoon(){ openGames(); }
 
 let wheelRotation=0;
 let wheelBusy=false;
+let wheelGroup="C12";
+function wheelStudents(){return wheelGroup==="C33"?c33Students:groupStudents;}
 function wheelColors(){return ["#ff424f","#353541","#c91f36","#292932","#e64a58","#41414d"];}
 function drawWheel(){
  const canvas=document.getElementById("wheelCanvas");
  if(!canvas)return;
- const ctx=canvas.getContext("2d"),cx=350,cy=350,r=337;
- const n=groupStudents.length,step=Math.PI*2/n;
+ const names=wheelStudents(),ctx=canvas.getContext("2d"),cx=350,cy=350,r=337;
+ const n=names.length,step=Math.PI*2/n;
  ctx.clearRect(0,0,700,700);
- groupStudents.forEach((name,i)=>{
+ names.forEach((name,i)=>{
   const start=-Math.PI/2+i*step,end=start+step;
   ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
   ctx.fillStyle=wheelColors()[i%6];ctx.fill();
@@ -2070,42 +2099,44 @@ function drawWheel(){
   ctx.save();ctx.translate(cx,cy);ctx.rotate(start+step/2);
   ctx.textAlign="right";ctx.textBaseline="middle";
   ctx.fillStyle="#fff";ctx.font="bold 15px Arial";
-  let label=name.split(" ").slice(0,2).join(" ");
-  ctx.fillText(label,r-16,0,175);ctx.restore();
+  ctx.fillText(name.split(" ").slice(0,2).join(" "),r-16,0,175);ctx.restore();
  });
  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle="#f5c5c9";ctx.lineWidth=8;ctx.stroke();
 }
 function openWheel(){
  const modal=document.getElementById("wheelModal");
- modal.classList.add("open");
- document.body.style.overflow="hidden";
- document.getElementById("wheelRoster").innerHTML=groupStudents.map((name,i)=>'<div class="wheel-person">'+(i+1)+'. '+name+'</div>').join("");
+ modal.classList.add("open");document.body.style.overflow="hidden";
+ document.getElementById("wheelGroupPicker").classList.remove("group-hidden");
+ document.getElementById("wheelGame").classList.add("group-hidden");
+}
+function selectWheelGroup(group){
+ wheelGroup=group;wheelRotation=0;
+ document.getElementById("wheelGroupPicker").classList.add("group-hidden");
+ document.getElementById("wheelGame").classList.remove("group-hidden");
+ document.getElementById("wheelGroupCaption").textContent="Группа "+(group==="C33"?"С-33":"С-12")+" · "+wheelStudents().length+" студентов";
+ document.getElementById("wheelRosterTitle").textContent="ВСЕ УЧАСТНИКИ — "+wheelStudents().length+" ЧЕЛОВЕК";
+ document.getElementById("wheelRoster").innerHTML=wheelStudents().map((name,i)=>'<div class="wheel-person">'+(i+1)+'. '+escapeGameText(name)+'</div>').join("");
+ document.getElementById("wheelResult").textContent="Кто сегодня моет доску? 🤔";
+ const button=document.getElementById("wheelSpin");button.disabled=false;button.textContent="КРУТИТЬ КОЛЕСО";
+ const canvas=document.getElementById("wheelCanvas");canvas.style.transition="none";canvas.style.transform="rotate(0deg)";void canvas.offsetWidth;canvas.style.transition="";
  drawWheel();
 }
+function backToWheelGroups(){if(wheelBusy)return;document.getElementById("wheelGame").classList.add("group-hidden");document.getElementById("wheelGroupPicker").classList.remove("group-hidden");}
 function closeWheel(){
- document.getElementById("wheelModal").classList.remove("open");
- document.body.style.overflow="";
+ if(wheelBusy)return;
+ document.getElementById("wheelModal").classList.remove("open");document.body.style.overflow="";
 }
 function spinWheel(){
  if(wheelBusy)return;
  wheelBusy=true;
- const button=document.getElementById("wheelSpin"),canvas=document.getElementById("wheelCanvas");
- const result=document.getElementById("wheelResult");
- button.disabled=true;button.textContent="КОЛЕСО КРУТИТСЯ…";
- result.textContent="Выбираем, кто будет мыть доску…";
- const winner=Math.floor(Math.random()*groupStudents.length);
- const step=360/groupStudents.length;
- const center=winner*step+step/2;
- const current=((wheelRotation%360)+360)%360;
- const desired=((360-center)%360+360)%360;
- const delta=((desired-current)%360+360)%360;
- wheelRotation+=360*6+delta;
- canvas.style.transform="rotate("+wheelRotation+"deg)";
+ const names=wheelStudents(),button=document.getElementById("wheelSpin"),canvas=document.getElementById("wheelCanvas"),result=document.getElementById("wheelResult");
+ button.disabled=true;button.textContent="КОЛЕСО КРУТИТСЯ…";result.textContent="Выбираем, кто будет мыть доску…";
+ const winner=Math.floor(Math.random()*names.length),step=360/names.length,center=winner*step+step/2;
+ const current=((wheelRotation%360)+360)%360,desired=((360-center)%360+360)%360,delta=((desired-current)%360+360)%360;
+ wheelRotation+=360*6+delta;canvas.style.transform="rotate("+wheelRotation+"deg)";
  const done=()=>{
-  result.textContent="🎉 Сегодня доску моет: "+groupStudents[winner]+"!";
-  button.disabled=false;button.textContent="КРУТИТЬ ЕЩЁ РАЗ";
-  wheelBusy=false;
-  canvas.removeEventListener("transitionend",done);
+  result.textContent="🎉 Сегодня доску моет: "+names[winner]+"!";
+  button.disabled=false;button.textContent="КРУТИТЬ ЕЩЁ РАЗ";wheelBusy=false;canvas.removeEventListener("transitionend",done);
  };
  canvas.addEventListener("transitionend",done);
 }
