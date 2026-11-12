@@ -89,14 +89,14 @@ def fetch_group_replacements() -> str:
 
     soup = BeautifulSoup(html, "html.parser")
     lines = [
-        re.sub(r"\\s+", " ", line).strip()
-        for line in soup.get_text("\\n").replace("\\xa0", " ").splitlines()
+        re.sub(r"\s+", " ", line).strip()
+        for line in soup.get_text("\n").replace("\xa0", " ").splitlines()
     ]
     lines = [line for line in lines if line]
 
     start = None
     for index, line in enumerate(lines):
-        if re.match(r"^С[-‑–]12(?:\\s|\\||$)", line, re.IGNORECASE):
+        if re.match(r"^С[-‑–]12(?:\s|\||$)", line, re.IGNORECASE):
             start = index
             break
     if start is None:
@@ -104,14 +104,14 @@ def fetch_group_replacements() -> str:
 
     section = [lines[start]]
     group_pattern = re.compile(
-        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\\d{2}(?:\\s|\\||$)",
+        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\d{2}(?:\s|\||$)",
         re.IGNORECASE,
     )
     for line in lines[start + 1:]:
         if group_pattern.match(line):
             break
         section.append(line)
-    return "\\n".join(section)
+    return "\n".join(section)
 
 
 def process_updates(state: dict) -> None:
@@ -139,7 +139,7 @@ def process_updates(state: dict) -> None:
                 state["subscribers"].append(chat_id)
             send_message(
                 chat_id,
-                "🔔 Готово! Ты подписан(а) на уведомления группы С-12.\\n"
+                "🔔 Готово! Ты подписан(а) на уведомления группы С-12.\n"
                 "Я буду сообщать о новых заменах. Чтобы отключить уведомления, отправь /stop.",
             )
         elif command == "/stop":
@@ -163,8 +163,8 @@ def check_replacements(state: dict) -> None:
         logger.info("Сохранён начальный снимок замен С-12; старые изменения не рассылаются")
     elif previous != current:
         message = (
-            "📢 Изменения в заменах группы С-12!\\n\\n"
-            f"{current}\\n\\nИсточник: {REPLACEMENTS_URL}"
+            "📢 Изменения в заменах группы С-12!\n\n"
+            f"{current}\n\nИсточник: {REPLACEMENTS_URL}"
         )
         for chat_id in list(state["subscribers"]):
             try:
