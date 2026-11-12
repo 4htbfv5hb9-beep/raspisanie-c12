@@ -238,7 +238,7 @@ export default {
             await telegram(env, "setWebhook", {
               url: webhookUrl,
               secret_token: env.TELEGRAM_WEBHOOK_SECRET,
-              allowed_updates: JSON.stringify(["message"]),
+              allowed_updates: ["message"],
               drop_pending_updates: false
             });
           }
