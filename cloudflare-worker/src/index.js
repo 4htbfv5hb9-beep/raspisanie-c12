@@ -81,7 +81,7 @@ function constantTimeEqual(a, b) {
   return diff === 0;
 }
 
-async function verifyTelegramInitData(initData, botToken) {
+async function verifyTelegramInitData(initData, botToken, maxAgeSeconds = MAX_INIT_DATA_AGE_SECONDS) {
   if (typeof initData !== "string" || !botToken) return null;
   const params = new URLSearchParams(initData);
   const suppliedHash = params.get("hash");
@@ -94,7 +94,7 @@ async function verifyTelegramInitData(initData, botToken) {
   if (!constantTimeEqual(expectedHash, suppliedHash.toLowerCase())) return null;
   const authDate = Number(params.get("auth_date"));
   const now = Math.floor(Date.now() / 1000);
-  if (!Number.isFinite(authDate) || now - authDate > MAX_INIT_DATA_AGE_SECONDS || authDate > now + 30) return null;
+  if (!Number.isFinite(authDate) || now - authDate > maxAgeSeconds || authDate > now + 30) return null;
   try { return JSON.parse(params.get("user") || "null"); } catch { return null; }
 }
 
@@ -296,7 +296,7 @@ export default {
       if (raw.length > 10000) return json({ error: "Request too large" }, 413, origin);
       let body;
       try { body = JSON.parse(raw); } catch { return json({ error: "Invalid JSON" }, 400, origin); }
-      const user = await verifyTelegramInitData(body.initData, env.BOT_TOKEN);
+      const user = await verifyTelegramInitData(body.initData, env.BOT_TOKEN, 86400);
       if (!user || !Number.isSafeInteger(Number(user.id))) return json({ error: "Открой приложение через Telegram и попробуй снова" }, 401, origin);
       const data = await env.C12_DATA.get("c12:games", "json") || { profiles: {}, claimed: {}, scores: {} };
       data.profiles ||= {}; data.claimed ||= {}; data.scores ||= {};
