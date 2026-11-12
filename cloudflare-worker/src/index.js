@@ -172,7 +172,7 @@ async function handleTelegramUpdate(update, env) {
     if (!subscribers.includes(chatId)) subscribers.push(chatId);
     await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers));
     await sendText(env, chatId,
-      "🔔 Готово! Ты подписан(а) на личные уведомления группы С-12.\n\n" +
+      "🔔 Готово! Ты подписан(а) на личные уведомления ГАПОУ БАСК\n\n" +
       "Я буду присылать сообщения о новых заменах и изменениях расписания.\n" +
       "Чтобы отключить уведомления, отправь /stop.");
   } else if (command === "/stop") {
