@@ -696,6 +696,114 @@ footer span {
     .live-lesson { padding: 13px 14px; }
 }
 
+
+/* CALENDAR */
+.calendar-panel {
+    padding: 21px;
+    margin: 0 0 28px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--panel);
+}
+.calendar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 17px;
+}
+.calendar-month {
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: capitalize;
+}
+.calendar-nav { display: flex; gap: 7px; }
+.calendar-nav button {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--panel2);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+}
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+.calendar-weekday {
+    padding: 5px 0;
+    color: var(--muted);
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+}
+.calendar-day {
+    min-width: 0;
+    aspect-ratio: 1;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: var(--panel2);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.calendar-day.muted { color: #62626d; opacity: .45; }
+.calendar-day.today { border-color: rgba(255,66,79,.65); }
+.calendar-day.selected {
+    color: white;
+    background: var(--red);
+    box-shadow: 0 4px 14px rgba(255,66,79,.22);
+}
+.calendar-day.sunday { color: var(--muted); }
+.calendar-legend {
+    margin-top: 11px;
+    color: var(--muted);
+    font-size: 10px;
+}
+.calendar-detail {
+    margin-top: 18px;
+    padding-top: 17px;
+    border-top: 1px solid var(--border);
+}
+.calendar-detail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 11px;
+}
+.calendar-detail-title { font-size: 14px; font-weight: 800; }
+.calendar-week-tag {
+    color: #ff858d;
+    background: var(--red-soft);
+    padding: 5px 8px;
+    border-radius: 7px;
+    font-size: 9px;
+    font-weight: 800;
+}
+.calendar-lesson {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.calendar-lesson:last-child { border-bottom: 0; }
+.calendar-lesson-name { font-size: 12px; font-weight: 800; }
+.calendar-lesson-meta { color: var(--muted); font-size: 10px; margin-top: 3px; }
+.calendar-lesson-time { color: #ff858d; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.calendar-empty { color: var(--muted); font-size: 12px; padding: 8px 0; }
+@media (max-width: 560px) {
+    .calendar-panel { padding: 15px; }
+    .calendar-grid { gap: 4px; }
+    .calendar-day { border-radius: 8px; }
+}
+
 </style>
 </head>
 
@@ -758,6 +866,11 @@ footer span {
         📋 Список группы
     </button>
 
+    <a class="replace-button" href="https://t.me/Raspisanie_C12_bot" target="_blank" rel="noopener noreferrer">
+        🔔 Уведомления
+    </a>
+
+
 </div>
 
 <section class="roster-panel" id="rosterPanel" aria-live="polite">
@@ -812,6 +925,24 @@ footer span {
         <div class="bell-time">14:10–15:30</div>
     </div>
 
+</section>
+
+
+<div class="section-heading">
+    <h2>Календарь занятий</h2>
+    <span>ВЫБЕРИ ДЕНЬ</span>
+</div>
+<section class="calendar-panel">
+    <div class="calendar-top">
+        <div class="calendar-month" id="calendarMonth">Месяц</div>
+        <div class="calendar-nav">
+            <button type="button" aria-label="Предыдущий месяц" onclick="shiftCalendarMonth(-1)">‹</button>
+            <button type="button" aria-label="Следующий месяц" onclick="shiftCalendarMonth(1)">›</button>
+        </div>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+    <div class="calendar-legend">Обведённая дата — сегодня · Красная дата — выбранный день</div>
+    <div class="calendar-detail" id="calendarDetail" aria-live="polite"></div>
 </section>
 
 <div class="section-heading">
@@ -952,6 +1083,113 @@ red: [
 };
 
 let currentWeek = "white";
+
+const calendarWeekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const calendarTodayParts = permNowParts();
+let selectedCalendarDate = calendarTodayParts.year + "-" + calendarTodayParts.month + "-" + calendarTodayParts.day;
+let calendarMonthDate = new Date(Number(calendarTodayParts.year), Number(calendarTodayParts.month) - 1, 1);
+
+function dateKey(date) {
+    return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+}
+
+function parseDateKey(key) {
+    const [year, month, day] = key.split("-").map(Number);
+    return new Date(year, month - 1, day);
+}
+
+function weekForCalendarDate(date) {
+    const anchorDate = new Date(2026, 10, 9);
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diff = Math.floor((target - anchorDate) / 86400000);
+    const weekNo = Math.floor(diff / 7);
+    return ((weekNo % 2 + 2) % 2 === 0) ? "white" : "red";
+}
+
+function groupedCalendarLessons(day) {
+    const grouped = [];
+    (day?.lessons || []).forEach(item => {
+        const last = grouped[grouped.length - 1];
+        if (last && last.subject === item[0]) {
+            last.groups.push(item[1] + " · каб. " + item[2]);
+        } else {
+            grouped.push({ subject: item[0], groups: [item[1] + " · каб. " + item[2]] });
+        }
+    });
+    return grouped;
+}
+
+function renderCalendarDetail() {
+    const date = parseDateKey(selectedCalendarDate);
+    const week = weekForCalendarDate(date);
+    const weekData = schedule[week];
+    const dayIndex = (date.getDay() + 6) % 7;
+    const detail = document.getElementById("calendarDetail");
+    const weekLabel = week === "white" ? "БЕЛАЯ НЕДЕЛЯ" : "КРАСНАЯ НЕДЕЛЯ";
+    const dateLabel = new Intl.DateTimeFormat("ru-RU", {
+        weekday: "long", day: "numeric", month: "long"
+    }).format(date);
+    const day = dayIndex < 6 ? weekData[dayIndex] : null;
+    const lessons = groupedCalendarLessons(day);
+    const pairTimes = ["08:30–10:00", "10:10–11:40", "12:30–13:50", "14:10–15:30"];
+    let body = "";
+    if (!lessons.length) {
+        body = '<div class="calendar-empty">' + (dayIndex === 6 ? "Воскресенье — выходной 🌿" : "На этот день занятий нет.") + '</div>';
+    } else {
+        body = lessons.map((lesson, index) => {
+            const time = pairTimes[index] || "Время уточняется";
+            return '<div class="calendar-lesson"><div><div class="calendar-lesson-name">' +
+                (index + 1) + '. ' + lesson.subject + '</div><div class="calendar-lesson-meta">' +
+                lesson.groups.join(" / ") + '</div></div><div class="calendar-lesson-time">' + time +
+                '</div></div>';
+        }).join("");
+    }
+    detail.innerHTML = '<div class="calendar-detail-head"><div class="calendar-detail-title">' +
+        dateLabel + '</div><div class="calendar-week-tag">' + weekLabel +
+        '</div></div>' + body;
+}
+
+function renderCalendar() {
+    const grid = document.getElementById("calendarGrid");
+    const monthTitle = document.getElementById("calendarMonth");
+    monthTitle.textContent = new Intl.DateTimeFormat("ru-RU", {
+        month: "long", year: "numeric"
+    }).format(calendarMonthDate);
+    const year = calendarMonthDate.getFullYear();
+    const month = calendarMonthDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const offset = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayKey = calendarTodayParts.year + "-" + calendarTodayParts.month + "-" + calendarTodayParts.day;
+    let html = calendarWeekdays.map(day => '<div class="calendar-weekday">' + day + '</div>').join("");
+    for (let i = 0; i < offset; i++) html += '<div></div>';
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const key = dateKey(date);
+        const classes = ["calendar-day"];
+        if (key === todayKey) classes.push("today");
+        if (key === selectedCalendarDate) classes.push("selected");
+        if (date.getDay() === 0) classes.push("sunday");
+        html += '<button type="button" class="' + classes.join(" ") +
+            '" onclick="selectCalendarDate(\'' + key + '\')" aria-label="' + day + '">' + day + '</button>';
+    }
+    grid.innerHTML = html;
+    renderCalendarDetail();
+}
+
+function selectCalendarDate(key) {
+    selectedCalendarDate = key;
+    const date = parseDateKey(key);
+    calendarMonthDate = new Date(date.getFullYear(), date.getMonth(), 1);
+    renderCalendar();
+}
+
+function shiftCalendarMonth(delta) {
+    calendarMonthDate = new Date(calendarMonthDate.getFullYear(), calendarMonthDate.getMonth() + delta, 1);
+    selectedCalendarDate = dateKey(calendarMonthDate);
+    renderCalendar();
+}
+
 
 const PERM_TZ = "Asia/Yekaterinburg";
 const bellTimes = [
@@ -1290,6 +1528,7 @@ currentWeek = ((weekNumber % 2 + 2) % 2 === 0)
     : "red";
 
 renderSchedule();
+renderCalendar();
 updatePermDashboard();
 setInterval(updatePermDashboard, 1000);
 
