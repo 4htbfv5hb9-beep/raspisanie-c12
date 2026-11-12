@@ -1139,6 +1139,16 @@ footer span {
       <button id="c33RedBtn" type="button" onclick="setC33Week('red')">Красная неделя</button>
     </div>
   </div>
+  <button class="replace-button roster-button" id="c33RosterBtn" type="button" onclick="toggleC33Roster()" aria-expanded="false">📋 Список группы</button>
+  <section class="roster-panel" id="c33RosterPanel" aria-live="polite">
+    <div class="section-heading" style="margin-top:0"><h2>Список группы С-33</h2><span>28 СТУДЕНТОВ</span></div>
+    <div class="leaders-card">
+      <div class="roster-role-title">СТАРОСТА И ЗАМЕСТИТЕЛЬ</div>
+      <div class="roster-role-line">⭐ Староста: <strong>Эрсез Тимур Мустафович</strong></div>
+      <div class="roster-role-line">↳ Заместитель: Миронова Анастасия Андреевна</div>
+    </div>
+    <div class="roster-list" id="c33RosterList"></div>
+  </section>
   <div class="section-heading">
     <h2 id="c33WeekTitle">Белая неделя</h2>
     <span>ГРУППА С-33</span>
@@ -1918,6 +1928,19 @@ function showComingSoon(){
  document.getElementById("soonView").classList.remove("group-hidden");
  window.scrollTo(0,0);
 }
+const c33Students = ["Буренкова София Владимировна","Валиева Камилла Азаматовна","Ежова Анастасия Юрьевна","Искужин Тимур Ринатович","Куцык Артём Александрович","Миронова Анастасия Андреевна","Пономарев Кирилл Константинович","Сарваров Раиль Ринатович","Сираев Амир Раилевич","Суфиянов Айрат Русланович","Туктагулов Рифат Маратович","Хасанова Азалия Раилевна","Шарифуллина Алина Рустемовна","Эрсез Тимур Мустафович","Варанкина Мирра Глебовна","Вильданова Риана Рустамовна","Гарипов Артур Азатович","Давлетшин Галиаскар Динисламович","Дударев Никита Григорьевич","Еникеев Даниил Дмитриевич","Закиров Артем Тимурович","Идрисов Альберт Артурович","Котенко Назар Максимович","Максютов Тимур Рафисович","Прокопьева Валерия Евгеньевна","Рафиков Тимур Альбертович","Талипов Алмаз Ринатович","Шарафеев Ринат Рифатович"];
+function toggleC33Roster(){
+ const panel=document.getElementById("c33RosterPanel"),button=document.getElementById("c33RosterBtn");
+ const opening=!panel.classList.contains("open");
+ panel.classList.toggle("open",opening);button.setAttribute("aria-expanded",String(opening));
+ button.textContent=opening?"✕ Закрыть список":"📋 Список группы";
+ if(opening)renderC33Roster();
+}
+function renderC33Roster(){
+ const roles={"Эрсез Тимур Мустафович":"⭐ СТАРОСТА","Миронова Анастасия Андреевна":"ЗАМЕСТИТЕЛЬ"};
+ document.getElementById("c33RosterList").innerHTML=c33Students.map((name,i)=>'<div class="roster-item">'+(i+1)+'. '+name+(roles[name]?' <span class="role-tag">· '+roles[name]+'</span>':'')+'</div>').join("");
+}
+
 function backToGroups(){
  document.getElementById("c12App").classList.add("group-hidden");
  document.getElementById("c33App").classList.add("group-hidden");
