@@ -2128,17 +2128,29 @@ function closeWheel(){
 }
 function spinWheel(){
  if(wheelBusy)return;
- wheelBusy=true;
  const names=wheelStudents(),button=document.getElementById("wheelSpin"),canvas=document.getElementById("wheelCanvas"),result=document.getElementById("wheelResult");
+ if(!names||!names.length||!button||!canvas||!result){alert("Не удалось открыть колесо. Закрой окно и попробуй ещё раз.");return;}
+ wheelBusy=true;
  button.disabled=true;button.textContent="КОЛЕСО КРУТИТСЯ…";result.textContent="Выбираем, кто будет мыть доску…";
  const winner=Math.floor(Math.random()*names.length),step=360/names.length,center=winner*step+step/2;
  const current=((wheelRotation%360)+360)%360,desired=((360-center)%360+360)%360,delta=((desired-current)%360+360)%360;
- wheelRotation+=360*6+delta;canvas.style.transform="rotate("+wheelRotation+"deg)";
+ wheelRotation+=360*6+delta;
+ let finished=false;
  const done=()=>{
+  if(finished)return;
+  finished=true;
   result.textContent="🎉 Сегодня доску моет: "+names[winner]+"!";
-  button.disabled=false;button.textContent="КРУТИТЬ ЕЩЁ РАЗ";wheelBusy=false;canvas.removeEventListener("transitionend",done);
+  button.disabled=false;button.textContent="КРУТИТЬ ЕЩЁ РАЗ";wheelBusy=false;
+  canvas.removeEventListener("transitionend",done);
  };
+ canvas.removeEventListener("transitionend",done);
  canvas.addEventListener("transitionend",done);
+ canvas.style.transition="transform 5s cubic-bezier(.12,.72,.12,1)";
+ canvas.style.willChange="transform";
+ void canvas.offsetWidth;
+ canvas.style.transform="rotate("+wheelRotation+"deg)";
+ // Запасное завершение для Safari, если transitionend не сработает.
+ window.setTimeout(done,5600);
 }
 
 </script>
