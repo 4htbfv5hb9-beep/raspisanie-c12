@@ -827,6 +827,26 @@ footer span {
 .score-soon{cursor:pointer}
 @media(max-width:560px){.group-chooser{padding-top:12vh}.group-options{grid-template-columns:1fr}.group-option{min-height:150px}.group-option .group-status{margin-top:18px}}
 
+
+/* FORTUNE WHEEL */
+.wheel-modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);padding:18px;overflow:auto}
+.wheel-modal.open{display:flex;align-items:center;justify-content:center}
+.wheel-box{width:min(620px,100%);max-height:94vh;overflow:auto;padding:22px;border:1px solid rgba(255,66,79,.3);border-radius:24px;background:#19191f;box-shadow:0 20px 80px #0009;text-align:center}
+.wheel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;margin-bottom:10px}
+.wheel-head h2{font-size:21px;font-weight:800}
+.wheel-close{border:1px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--text);padding:8px 12px;cursor:pointer}
+.wheel-pointer{font-size:28px;line-height:1;margin-bottom:-5px;position:relative;z-index:2}
+.wheel-stage{width:min( min(78vw,440px),100%);margin:0 auto;position:relative}
+#wheelCanvas{display:block;width:100%;height:auto;transform:rotate(0deg);transition:transform 5s cubic-bezier(.12,.72,.12,1);filter:drop-shadow(0 8px 20px #0008)}
+.wheel-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;border:5px solid #19191f;background:linear-gradient(135deg,#ff6670,#b9142b);display:grid;place-items:center;font-size:23px;box-shadow:0 2px 12px #0008;pointer-events:none}
+.wheel-spin{margin:18px auto 12px;padding:14px 28px;border:0;border-radius:14px;background:linear-gradient(135deg,#ff424f,#c91f36);color:white;font:800 14px Manrope,Arial;cursor:pointer;box-shadow:0 6px 20px #ff424f33}
+.wheel-spin:disabled{opacity:.55;cursor:default}
+.wheel-result{min-height:54px;padding:12px;border:1px solid rgba(255,66,79,.3);border-radius:13px;background:var(--red-soft);color:#ff858d;font-weight:800;font-size:16px}
+.wheel-roster-title{text-align:left;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:1px;margin:18px 0 8px}
+.wheel-roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;text-align:left}
+.wheel-person{padding:7px 9px;border-radius:8px;background:var(--panel2);color:var(--muted);font-size:10px}
+@media(max-width:560px){.wheel-box{padding:16px}.wheel-roster{grid-template-columns:1fr}.wheel-stage{width:min(82vw,390px)}}
+
 </style>
 </head>
 
@@ -915,12 +935,27 @@ footer span {
     </button>
 
     <button class="replace-button score-soon" type="button" onclick="showScoreSoon()">🏆 Баллы</button>
+    <button class="replace-button" type="button" onclick="openWheel()">🎡 Колесо фортуны</button>
 
     <a class="replace-button" href="https://t.me/Raspisanie_C12_bot" target="_blank" rel="noopener noreferrer">
         🔔 Уведомления
     </a>
 
 
+</div>
+
+
+<div class="wheel-modal" id="wheelModal" role="dialog" aria-modal="true" aria-labelledby="wheelTitle" onclick="if(event.target===this)closeWheel()">
+ <div class="wheel-box">
+  <div class="wheel-head"><h2 id="wheelTitle">🎡 Кто моет доску?</h2><button class="wheel-close" type="button" onclick="closeWheel()">✕</button></div>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Крути колесо — оно случайно выберет одного человека из группы С-12.</p>
+  <div class="wheel-pointer">🔻</div>
+  <div class="wheel-stage"><canvas id="wheelCanvas" width="700" height="700"></canvas><div class="wheel-center">🎡</div></div>
+  <button class="wheel-spin" id="wheelSpin" type="button" onclick="spinWheel()">КРУТИТЬ КОЛЕСО</button>
+  <div class="wheel-result" id="wheelResult" aria-live="polite">Кто сегодня дежурит у доски? 🤔</div>
+  <div class="wheel-roster-title">ВСЕ УЧАСТНИКИ — 34 ЧЕЛОВЕКА</div>
+  <div class="wheel-roster" id="wheelRoster"></div>
+ </div>
 </div>
 
 <section class="roster-panel" id="rosterPanel" aria-live="polite">
@@ -1603,6 +1638,62 @@ function backToGroups(){
 }
 function showScoreSoon(){
  alert("Раздел «Баллы» — СКОРО!");
+}
+
+
+let wheelRotation=0;
+let wheelBusy=false;
+function wheelColors(){return ["#ff424f","#353541","#c91f36","#292932","#e64a58","#41414d"];}
+function drawWheel(){
+ const canvas=document.getElementById("wheelCanvas");
+ if(!canvas)return;
+ const ctx=canvas.getContext("2d"),cx=350,cy=350,r=337;
+ const n=groupStudents.length,step=Math.PI*2/n;
+ ctx.clearRect(0,0,700,700);
+ groupStudents.forEach((name,i)=>{
+  const start=-Math.PI/2+i*step,end=start+step;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+  ctx.fillStyle=wheelColors()[i%6];ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,.65)";ctx.lineWidth=2;ctx.stroke();
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(start+step/2);
+  ctx.textAlign="right";ctx.textBaseline="middle";
+  ctx.fillStyle="#fff";ctx.font="bold 15px Arial";
+  let label=name.split(" ").slice(0,2).join(" ");
+  ctx.fillText(label,r-16,0,175);ctx.restore();
+ });
+ ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle="#f5c5c9";ctx.lineWidth=8;ctx.stroke();
+}
+function openWheel(){
+ const modal=document.getElementById("wheelModal");
+ modal.classList.add("open");
+ document.body.style.overflow="hidden";
+ document.getElementById("wheelRoster").innerHTML=groupStudents.map((name,i)=>'<div class="wheel-person">'+(i+1)+'. '+name+'</div>').join("");
+ drawWheel();
+}
+function closeWheel(){
+ document.getElementById("wheelModal").classList.remove("open");
+ document.body.style.overflow="";
+}
+function spinWheel(){
+ if(wheelBusy)return;
+ wheelBusy=true;
+ const button=document.getElementById("wheelSpin"),canvas=document.getElementById("wheelCanvas");
+ const result=document.getElementById("wheelResult");
+ button.disabled=true;button.textContent="КОЛЕСО КРУТИТСЯ…";
+ result.textContent="Выбираем, кто будет мыть доску…";
+ const winner=Math.floor(Math.random()*groupStudents.length);
+ const step=360/groupStudents.length;
+ const center=winner*step+step/2;
+ const target=((360-center)%360)+360*6;
+ wheelRotation+=target;
+ canvas.style.transform="rotate("+wheelRotation+"deg)";
+ const done=()=>{
+  result.textContent="🎉 Сегодня доску моет: "+groupStudents[winner]+"!";
+  button.disabled=false;button.textContent="КРУТИТЬ ЕЩЁ РАЗ";
+  wheelBusy=false;
+  canvas.removeEventListener("transitionend",done);
+ };
+ canvas.addEventListener("transitionend",done);
 }
 
 </script>
