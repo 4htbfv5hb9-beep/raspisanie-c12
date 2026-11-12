@@ -825,6 +825,19 @@ footer span {
 .soon-view{width:min(760px,92%);margin:0 auto;padding:18vh 0;text-align:center}
 .soon-view h2{font-size:42px;color:#ff858d;margin:18px 0 8px}
 .soon-view p{color:var(--muted);font-size:14px}
+.new-group-view{width:min(560px,92%);min-height:calc(100vh - 40px);margin:0 auto;padding:24px 0 48px;display:flex;flex-direction:column;justify-content:center}
+.new-group-card{position:relative;isolation:isolate;overflow:hidden;padding:clamp(25px,6vw,42px);border:1px solid rgba(255,66,79,.3);border-radius:28px;background:radial-gradient(ellipse at 50% 0%,rgba(255,66,79,.2),transparent 58%),linear-gradient(145deg,#202027,#17171d 72%);box-shadow:0 24px 80px rgba(0,0,0,.38);text-align:center}
+.new-group-card::before{content:"";position:absolute;z-index:-1;width:220px;height:220px;right:-115px;bottom:-130px;border-radius:50%;background:rgba(255,66,79,.12);filter:blur(8px)}
+.new-group-kicker{color:#ff858d;font-size:10px;font-weight:800;letter-spacing:2.5px;margin-bottom:22px}
+.new-group-icon{width:82px;height:82px;margin:0 auto 22px;display:grid;place-items:center;border:1px solid rgba(255,105,115,.4);border-radius:25px;background:linear-gradient(145deg,rgba(255,66,79,.25),rgba(201,31,54,.08));box-shadow:0 12px 35px rgba(255,66,79,.15);font-size:38px}
+.new-group-card h2{font-size:clamp(30px,7vw,40px);line-height:1.1;letter-spacing:-1.4px;color:var(--text);margin:0 0 16px}
+.new-group-card .new-group-copy{max-width:390px;margin:0 auto;color:#b6b6c1;font-size:14px;line-height:1.8}
+.new-group-card .new-group-copy a{color:#ff858d;font-weight:800;text-decoration:none;text-decoration-thickness:2px;text-underline-offset:4px}
+.new-group-card .new-group-copy a:hover{text-decoration:underline}
+.new-group-contact{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:28px;padding:15px 20px;border:1px solid rgba(255,105,115,.4);border-radius:15px;background:linear-gradient(120deg,#ff424f,#c91f36);color:#fff;text-decoration:none;font-size:14px;font-weight:800;box-shadow:0 10px 26px rgba(255,66,79,.2);transition:transform .2s,box-shadow .2s}
+.new-group-contact:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(255,66,79,.3)}
+.new-group-hint{margin-top:18px;color:#777783;font-size:10px;line-height:1.6}
+.new-group-view .group-back{align-self:flex-start;margin-bottom:18px}
 .score-soon{cursor:pointer}
 @media(max-width:560px){.group-chooser{padding-top:12vh}.group-options{grid-template-columns:1fr}.group-option{min-height:150px}.group-option .group-status{margin-top:18px}}
 
@@ -903,7 +916,7 @@ footer span {
   <h1>Выбери свою<br><span style="color:var(--red)">группу</span></h1>
   <p class="subtitle">Расписание, замены и всё важное в одном месте</p>
   <div class="group-options">
-    <button class="group-option" type="button" onclick="showComingSoon()">
+    <button class="group-option" type="button" onclick="showNewGroupRequest()">
       <span class="group-name">Новая группа</span>
       <span class="group-desc">Хотите добавить свою группу?</span>
       <span class="group-status">НАПИСАТЬ АДМИНИСТРАТОРУ →</span>
@@ -927,11 +940,16 @@ footer span {
   <h2>СКОРО</h2>
   <p>Расписание группы С-33 скоро появится здесь.</p>
 </section>
-<section class="soon-view group-hidden" id="newGroupView">
+<section class="new-group-view group-hidden" id="newGroupView">
   <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
-  <div style="font-size:48px">➕</div>
-  <h2>Новая группа</h2>
-  <p>Чтобы добавить новую группу в приложение, напишите <a href="https://t.me/skwwwv" target="_blank" rel="noopener noreferrer" style="color:#ff858d;font-weight:800">@skwwwv</a>.</p>
+  <div class="new-group-card">
+    <div class="new-group-kicker">УЧЕБНЫЙ ПОРТАЛ · НОВАЯ ГРУППА</div>
+    <div class="new-group-icon" aria-hidden="true">✚</div>
+    <h2>Добавить группу</h2>
+    <p class="new-group-copy">Чтобы добавить новую группу в приложение, напишите <a href="https://t.me/skwwwv" target="_blank" rel="noopener noreferrer">@skwwwv</a>.</p>
+    <a class="new-group-contact" href="https://t.me/skwwwv" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">✈</span> Написать в Telegram</a>
+    <div class="new-group-hint">Откроется Telegram, где можно связаться с администратором.</div>
+  </div>
 </section>
 <div class="container group-hidden" id="c12App">
 
@@ -1963,6 +1981,7 @@ function backToGroups(){
  document.getElementById("c12App").classList.add("group-hidden");
  document.getElementById("c33App").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
+ document.getElementById("newGroupView").classList.add("group-hidden");
  document.getElementById("groupChooser").classList.remove("group-hidden");
  window.scrollTo(0,0);
 }
