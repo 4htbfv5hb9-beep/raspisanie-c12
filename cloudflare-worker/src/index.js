@@ -341,33 +341,31 @@ export default {
       const data = await env.C12_DATA.get("c12:games", "json") || { profiles: {}, claimed: {}, scores: {} };
       data.profiles ||= {}; data.claimed ||= {}; data.scores ||= {};
       const telegramId = String(user.id);
-      let profile = data.profiles[telegramId];
-      if (typeof profile === "string") profile = { group: "C12", student: profile };
+      let profiles = data.profiles[telegramId];
+      if (typeof profiles === "string") profiles = { C12: profiles };
+      else if (profiles && profiles.student && profiles.group) profiles = { [profiles.group]: profiles.student };
+      profiles ||= {};
+      const profile = profiles[selectedGroup] || null;
       if (body.action === "register") {
-        if (profile) {
-          if (profile.group !== selectedGroup) return json({ error: "Этот Telegram-аккаунт уже привязан к группе " + profile.group + ". Для другой группы нужен отдельный аккаунт." }, 409, origin);
-          return json({ ok: true, student: profile.student, group: profile.group }, 200, origin);
-        }
+        if (profile) return json({ ok: true, student: profile, group: selectedGroup }, 200, origin);
         const student = selectedStudents.find(name => name === body.student);
         if (!student) return json({ error: "Выбери фамилию из списка выбранной группы" }, 400, origin);
         const claimKey = selectedGroup + ":" + student;
-        if (data.claimed[claimKey] && data.claimed[claimKey] !== telegramId) {
+        const existingClaim = data.claimed[claimKey] || (selectedGroup === "C12" ? data.claimed[student] : null);
+        if (existingClaim && existingClaim !== telegramId) {
           return json({ error: "Этот профиль уже привязан к другому Telegram-аккаунту. Обратись к старосте." }, 409, origin);
         }
-        data.profiles[telegramId] = { group: selectedGroup, student };
+        profiles[selectedGroup] = student;
+        data.profiles[telegramId] = profiles;
         data.claimed[claimKey] = telegramId;
         const scoreKey = selectedGroup + ":" + student;
         data.scores[scoreKey] ??= selectedGroup === "C12" ? (data.scores[student] || 0) : 0;
         await env.C12_DATA.put("c12:games", JSON.stringify(data));
         return json({ ok: true, student, group: selectedGroup }, 200, origin);
       }
-      if (body.action === "whoami") {
-        if (!profile) return json({ ok: true, student: null, group: null }, 200, origin);
-        if (profile.group !== selectedGroup) return json({ ok: true, student: null, group: profile.group }, 200, origin);
-        return json({ ok: true, student: profile.student, group: profile.group }, 200, origin);
-      }
-      if (!profile || profile.group !== selectedGroup) return json({ error: "Сначала выбери своё имя в этой группе" }, 403, origin);
-      const scoreKey = selectedGroup + ":" + profile.student;
+      if (body.action === "whoami") return json({ ok: true, student: profile, group: profile ? selectedGroup : null }, 200, origin);
+      if (!profile) return json({ error: "Сначала выбери своё имя в этой группе" }, 403, origin);
+      const scoreKey = selectedGroup + ":" + profile;
       if (body.action === "score") {
         const limits = { memory: 60, darts: 100, karate: 100 };
         const game = body.game;
@@ -383,7 +381,7 @@ export default {
         data.daily[dailyKey] = used + points;
         data.scores[scoreKey] = (data.scores[scoreKey] || 0) + points;
         await env.C12_DATA.put("c12:games", JSON.stringify(data));
-        return json({ ok: true, student: profile.student, group: selectedGroup, added: points, total: data.scores[scoreKey] }, 200, origin);
+        return json({ ok: true, student: profile, group: selectedGroup, added: points, total: data.scores[scoreKey] }, 200, origin);
       }
       return json({ error: "Unknown action" }, 400, origin);
     }
