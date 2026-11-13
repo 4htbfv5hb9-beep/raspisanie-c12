@@ -248,7 +248,10 @@ def fetch_group_replacements(group: str = "С-12") -> str:
                 wanted = target.replace("–", "-").replace("‑", "-")
                 active_group = row_group == wanted
         if active_group:
-            selected_rows.append(" | ".join(values))
+            # Normalize rowspan continuation rows to the same five-column layout.
+            has_group_cell = bool(group_code.match(values[0].strip()))
+            row_values = values[1:] if has_group_cell else values
+            selected_rows.append(" | ".join([group] + row_values))
 
     if selected_rows:
         return "\n".join(([date_line] if date_line else []) + selected_rows)
