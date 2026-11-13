@@ -1655,6 +1655,12 @@ function renderRoster() {
 }
 
 
+const REPLACEMENTS_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/replacements";
+let liveReplacements={C12:null,C33:null};
+function yekaTodayKey(){const p=permNowParts();return p.year+"-"+p.month+"-"+p.day;}
+function replacementFor(group,pair){const data=liveReplacements[group];if(!data||data.date!==yekaTodayKey())return null;return (data.entries||[]).find(x=>Number(x.pair)===Number(pair))||null;}
+async function refreshLiveReplacements(){try{const response=await fetch(REPLACEMENTS_API,{cache:"no-store"});if(!response.ok)return;const data=await response.json();if(!data.ok)return;liveReplacements=data.groups||liveReplacements;renderSchedule();renderC33Schedule();}catch(error){console.warn("Не удалось обновить замены",error);}}
+
 function renderSchedule() {
 
     const container = document.getElementById("days");
@@ -1798,11 +1804,6 @@ setInterval(refreshLiveReplacements, 60000);
 
 
 
-const REPLACEMENTS_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/replacements";
-let liveReplacements={C12:null,C33:null};
-function yekaTodayKey(){const p=permNowParts();return p.year+"-"+p.month+"-"+p.day;}
-function replacementFor(group,pair){const data=liveReplacements[group];if(!data||data.date!==yekaTodayKey())return null;return (data.entries||[]).find(x=>Number(x.pair)===Number(pair))||null;}
-async function refreshLiveReplacements(){try{const response=await fetch(REPLACEMENTS_API,{cache:"no-store"});if(!response.ok)return;const data=await response.json();if(!data.ok)return;liveReplacements=data.groups||liveReplacements;renderSchedule();renderC33Schedule();}catch(error){console.warn("Не удалось обновить замены",error);}}
 
 const GAMES_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/games";
 let gameProfile=null,gameBusy=false,gameGroup="C12";
