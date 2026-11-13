@@ -259,7 +259,7 @@ export default {
         if (url.pathname === "/internal/sync-replacements") {
           const body = await request.json();
           if (!["С-12", "С-33"].includes(body.group) ||
-              typeof body.date !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(body.date) ||
+              typeof body.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.date) ||
               !Array.isArray(body.entries) || body.entries.length > 100) {
             return json({ ok: false, error: "Invalid replacements payload" }, 400, origin);
           }
