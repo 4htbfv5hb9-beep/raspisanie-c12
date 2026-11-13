@@ -363,7 +363,7 @@ def parse_replacement_feed(text: str, group: str) -> dict:
         # "НЕТ" in the subject column is a real replacement value (no lesson), not an empty cell.
         subject = subject_cell if subject_cell and subject_cell.lower() not in ("—", "-") else None
         teacher = teacher_cell if teacher_cell and teacher_cell.lower() not in ("нет", "—", "-") else None
-        room = room_cell if room_cell and room_cell.lower() not in ("нет", "—", "-") else None
+        room = room_cell.upper() if room_cell and room_cell.lower() not in ("—", "-") else None
         if not any((subject, teacher, room)):
             continue
         for pair in pairs:
