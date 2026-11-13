@@ -904,6 +904,13 @@ footer span {
 .c33-note{color:var(--muted);font-size:11px;margin-top:18px}
 @media(max-width:650px){.c33-days{grid-template-columns:1fr}.c33-hero{padding:22px}}
 
+
+/* Автоматические замены в расписании */
+.lesson.is-replaced{border:1px solid rgba(255,66,79,.55);background:linear-gradient(135deg,rgba(255,66,79,.13),rgba(201,31,54,.06));box-shadow:0 0 0 1px rgba(255,66,79,.08)}
+.replacement-tag{display:inline-flex;align-items:center;gap:5px;margin:0 0 7px;padding:4px 9px;border-radius:999px;background:var(--red);color:#fff;font-size:10px;font-weight:800;letter-spacing:.04em}
+.replacement-note{display:block;color:#ff8790;font-size:11px;font-weight:700;margin-top:4px}
+.c33-lesson.is-replaced{border:1px solid rgba(255,66,79,.55);background:linear-gradient(135deg,rgba(255,66,79,.13),rgba(201,31,54,.06))}
+
 </style>
 </head>
 
@@ -1707,36 +1714,27 @@ function renderSchedule() {
         // Нумерация уже объединённых пар.
 
         groupedLessons.forEach((lesson, i) => {
-
+            const todayParts = permNowParts();
+            const todayIndex = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].indexOf(todayParts.weekday);
+            const isToday = day.day === ["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"][todayIndex];
+            const replacement = isToday ? replacementFor("C12", i + 1) : null;
+            const displaySubject = replacement?.subject || lesson.subject;
             const groupsHTML = lesson.groups.map(group => `
                 <div class="lesson-group">
-                    <span class="teacher">${group.teacher}</span>
-                    <span class="room">КАБ. ${group.room}</span>
+                    <span class="teacher">${replacement?.teacher || group.teacher}</span>
+                    <span class="room">${replacement?.room ? "КАБ. "+replacement.room : "КАБ. "+group.room}</span>
                 </div>
             `).join("");
-
             lessonsHTML += `
-                <div class="lesson">
-
-                    <div class="lesson-number">
-                        ${i + 1}
-                    </div>
-
+                <div class="lesson ${replacement ? "is-replaced" : ""}">
+                    <div class="lesson-number">${i + 1}</div>
                     <div class="lesson-content">
-
-                        <div class="lesson-name">
-                            ${lesson.subject}
-                        </div>
-
-                        <div class="lesson-groups">
-                            ${groupsHTML}
-                        </div>
-
+                        ${replacement ? '<span class="replacement-tag">↻ ЗАМЕНА</span>' : ''}
+                        <div class="lesson-name">${displaySubject}</div>
+                        <div class="lesson-groups">${groupsHTML}</div>
                     </div>
-
                 </div>
             `;
-
         });
 
 
@@ -1794,8 +1792,17 @@ renderCalendar();
 updatePermDashboard();
 setInterval(updatePermDashboard, 1000);
 setInterval(updateC33Dashboard, 1000);
+refreshLiveReplacements();
+setInterval(refreshLiveReplacements, 60000);
 
 
+
+
+const REPLACEMENTS_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/replacements";
+let liveReplacements={C12:null,C33:null};
+function yekaTodayKey(){const p=permNowParts();return p.year+"-"+p.month+"-"+p.day;}
+function replacementFor(group,pair){const data=liveReplacements[group];if(!data||data.date!==yekaTodayKey())return null;return (data.entries||[]).find(x=>Number(x.pair)===Number(pair))||null;}
+async function refreshLiveReplacements(){try{const response=await fetch(REPLACEMENTS_API,{cache:"no-store"});if(!response.ok)return;const data=await response.json();if(!data.ok)return;liveReplacements=data.groups||liveReplacements;renderSchedule();renderC33Schedule();}catch(error){console.warn("Не удалось обновить замены",error);}}
 
 const GAMES_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/games";
 let gameProfile=null,gameBusy=false,gameGroup="C12";
@@ -1970,9 +1977,9 @@ function renderC33Schedule(){
    return {...lesson,visibleDetails:details};
   }).filter(lesson=>lesson.visibleDetails.length);
   return '<article class="c33-day"><h2>'+day.day+'</h2>'+
-   lessons.map(lesson=>'<div class="c33-lesson"><div class="c33-pair">'+lesson.pair+'</div><div class="c33-info"><div class="c33-subject">'+lesson.subject+'</div>'+
-   lesson.visibleDetails.map(d=>'<div class="c33-detail"><span class="c33-week">'+d[0]+'</span><strong>'+d[1]+'</strong>'+(d[2]?' · каб. '+d[2]:'')+'</div>').join('')+
-   '</div></div>').join('')+'</article>';
+   lessons.map(lesson=>{const todayParts=permNowParts();const todayName=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].indexOf(todayParts.weekday);const isToday=day.day===["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"][todayName];const replacement=isToday?replacementFor("C33",lesson.pair):null;return '<div class="c33-lesson '+(replacement?'is-replaced':'')+'"><div class="c33-pair">'+lesson.pair+'</div><div class="c33-info">'+(replacement?'<span class="replacement-tag">↻ ЗАМЕНА</span>':'')+'<div class="c33-subject">'+(replacement?.subject||lesson.subject)+'</div>'+
+   lesson.visibleDetails.map(d=>'<div class="c33-detail"><span class="c33-week">'+d[0]+'</span><strong>'+(replacement?.teacher||d[1])+'</strong>'+(replacement?.room?' · каб. '+replacement.room:(d[2]?' · каб. '+d[2]:''))+'</div>').join('')+
+   '</div></div>';}).join('')+'</article>';
  }).join('');
 }
 function openGroupList(){
