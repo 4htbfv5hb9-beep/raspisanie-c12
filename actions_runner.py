@@ -233,7 +233,7 @@ def fetch_group_replacements(group: str = "С-12") -> str:
     if start is None:
         raise ValueError(f"Не удалось найти группу {group} на странице замен")
 
-    date_line = next((line for line in lines[:start] if re.search(r"\\d{1,2}\\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)", line, re.IGNORECASE)), None)
+    date_line = next((line for line in lines[:start] if re.search(r"\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)", line, re.IGNORECASE)), None)
     section = ([date_line] if date_line else []) + [lines[start]]
     group_pattern = re.compile(
         r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\d{2}(?:\s|\||$)",
