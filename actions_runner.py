@@ -209,6 +209,7 @@ def group_list_message(target: date | None = None) -> str:
 
 
 def fetch_group_replacements(group: str = "С-12") -> str:
+    """Return replacement rows for one group, preserving the original table columns."""
     url = REPLACEMENTS_URL_C33 if group == "С-33" else REPLACEMENTS_URL
     request = urllib.request.Request(
         url,
@@ -218,29 +219,53 @@ def fetch_group_replacements(group: str = "С-12") -> str:
         html = response.read()
 
     soup = BeautifulSoup(html, "html.parser")
+    page_text = soup.get_text(" ", strip=True).replace("\xa0", " ")
+    date_match = re.search(
+        r"\b\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b",
+        page_text,
+        re.IGNORECASE,
+    )
+    date_line = date_match.group(0) if date_match else ""
+
+    group_code = re.compile(r"^(?:С|А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ|ЭСТУ|ЛГ|МКД)[-‑–]\d{2}\b", re.IGNORECASE)
+    target = group.upper().replace(" ", "")
+    selected_rows = []
+    active_group = False
+    table_rows = soup.find_all("tr")
+
+    # The college page is a real HTML table. Extract each cell separately;
+    # BeautifulSoup.get_text("\n") splits cells and destroys column boundaries.
+    for row in table_rows:
+        cells = row.find_all(["th", "td"])
+        values = [re.sub(r"\s+", " ", cell.get_text(" ", strip=True)).strip() for cell in cells]
+        if not values:
+            continue
+        first = values[0].upper().replace(" ", "")
+        if first:
+            match = group_code.match(values[0].strip())
+            if match:
+                row_group = re.sub(r"\s+", "", match.group(0)).replace("–", "-").replace("‑", "-").upper()
+                wanted = target.replace("–", "-").replace("‑", "-")
+                active_group = row_group == wanted
+        if active_group:
+            selected_rows.append(" | ".join(values))
+
+    if selected_rows:
+        return "\n".join(([date_line] if date_line else []) + selected_rows)
+
+    # Fallback for a future page redesign where rows are rendered as text blocks.
     lines = [
         re.sub(r"\s+", " ", line).strip()
         for line in soup.get_text("\n").replace("\xa0", " ").splitlines()
     ]
     lines = [line for line in lines if line]
-
-    start = None
-    target_pattern = re.compile(rf"^{re.escape(group)}(?:\s|\||$)", re.IGNORECASE)
-    for index, line in enumerate(lines):
-        if target_pattern.match(line):
-            start = index
-            break
+    start = next((i for i, line in enumerate(lines)
+                  if re.match(rf"^{re.escape(group)}(?:\s|[-‑–]|\||$)", line, re.IGNORECASE)), None)
     if start is None:
         raise ValueError(f"Не удалось найти группу {group} на странице замен")
-
-    date_line = next((line for line in lines[:start] if re.search(r"\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)", line, re.IGNORECASE)), None)
     section = ([date_line] if date_line else []) + [lines[start]]
-    group_pattern = re.compile(
-        r"^(?:А|ВВ|ГД|ДЗ|ЗУ|ПО|СМ?|ЭСТУ|ЛГ)[-‑–]\d{2}(?:\s|\||$)",
-        re.IGNORECASE,
-    )
     for line in lines[start + 1:]:
-        if group_pattern.match(line):
+        if group_code.match(line):
             break
         section.append(line)
     return "\n".join(section)
@@ -330,7 +355,8 @@ def parse_replacement_feed(text: str, group: str) -> dict:
         if active_group != group.upper():
             continue
         found_group = True
-        pairs = [int(x) for x in re.findall(r"\d+", pair_cell)]
+        pair_match = re.search(r"((?:\d+\s*[,;/]\s*)*\d+)\s*пара", pair_cell, re.IGNORECASE)
+        pairs = [int(x) for x in re.findall(r"\d+", pair_match.group(1))] if pair_match else []
         subject = subject_cell if subject_cell and subject_cell.lower() not in ("нет", "—", "-") else None
         teacher = teacher_cell if teacher_cell and teacher_cell.lower() not in ("нет", "—", "-") else None
         room = room_cell if room_cell and room_cell.lower() not in ("нет", "—", "-") else None
