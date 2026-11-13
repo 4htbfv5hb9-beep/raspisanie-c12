@@ -370,7 +370,16 @@ def parse_replacement_feed(text: str, group: str) -> dict:
                 entries.append({"date": source_date, "group": group, "pair": pair,
                                 "subject": subject, "teacher": teacher, "room": room})
     if not found_group:
-        return {"date": source_date, "group": group, "entries": []}
+        # С-33 is sometimes listed only as a practice period, with no replacement rows.
+        # Treat that explicit source state as an empty list; otherwise fail closed so a
+        # scraper/layout error cannot erase valid replacements from the app.
+        practice_only = re.search(
+            rf"\\b{re.escape(group)}\\s*[–‑-]\\s*практика\\b",
+            text,
+            re.IGNORECASE,
+        )
+        if not practice_only:
+            raise ValueError(f"На странице не найдена таблица замен для {group}")
     return {"date": source_date, "group": group, "entries": entries}
 
 
