@@ -374,7 +374,7 @@ def parse_replacement_feed(text: str, group: str) -> dict:
         # Treat that explicit source state as an empty list; otherwise fail closed so a
         # scraper/layout error cannot erase valid replacements from the app.
         practice_only = re.search(
-            rf"\\b{re.escape(group)}\\s*[–‑-]\\s*практика\\b",
+            rf"\b{re.escape(group)}\s*[–‑-]\s*практика\b",
             text,
             re.IGNORECASE,
         )
