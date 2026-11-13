@@ -1407,9 +1407,24 @@ function renderCalendarDetail() {
     } else {
         body = lessons.map((lesson, index) => {
             const time = pairTimes[index] || "Время уточняется";
-            return '<div class="calendar-lesson"><div><div class="calendar-lesson-name">' +
-                (index + 1) + '. ' + lesson.subject + '</div><div class="calendar-lesson-meta">' +
-                lesson.groups.join(" / ") + '</div></div><div class="calendar-lesson-time">' + time +
+            const isSelectedToday = selectedCalendarDate === yekaTodayKey();
+            const candidate = isSelectedToday ? replacementFor("C12", index + 1) : null;
+            const replacement = candidate && (
+                (candidate.subject && candidate.subject !== lesson.subject) ||
+                (candidate.teacher && lesson.groups.some(g => !g.startsWith(candidate.teacher + " ·"))) ||
+                (candidate.room && lesson.groups.some(g => !g.endsWith("каб. " + candidate.room)))
+            ) ? candidate : null;
+            const displaySubject = replacement?.subject || lesson.subject;
+            const displayGroups = replacement
+                ? [(replacement.teacher || lesson.groups[0].split(" · каб. ")[0]) +
+                   (replacement.room ? " · каб. " + replacement.room :
+                    (lesson.groups[0].includes(" · каб. ") ? " · каб. " + lesson.groups[0].split(" · каб. ")[1] : ""))]
+                : lesson.groups;
+            return '<div class="calendar-lesson"><div>' +
+                (replacement ? '<span class="replacement-tag">↻ ЗАМЕНА</span>' : '') +
+                '<div class="calendar-lesson-name">' + (index + 1) + '. ' + displaySubject +
+                '</div><div class="calendar-lesson-meta">' + displayGroups.join(" / ") +
+                '</div></div><div class="calendar-lesson-time">' + time +
                 '</div></div>';
         }).join("");
     }
