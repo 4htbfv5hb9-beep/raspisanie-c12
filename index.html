@@ -1723,7 +1723,12 @@ function renderSchedule() {
             const todayParts = permNowParts();
             const todayIndex = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].indexOf(todayParts.weekday);
             const isToday = day.day === ["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"][todayIndex];
-            const replacement = isToday ? replacementFor("C12", i + 1) : null;
+            const candidate = isToday ? replacementFor("C12", i + 1) : null;
+            const replacement = candidate && (
+                (candidate.subject && candidate.subject !== lesson.subject) ||
+                (candidate.teacher && lesson.groups.some(g => candidate.teacher !== g.teacher)) ||
+                (candidate.room && lesson.groups.some(g => candidate.room !== g.room))
+            ) ? candidate : null;
             const displaySubject = replacement?.subject || lesson.subject;
             const groupsHTML = lesson.groups.map(group => `
                 <div class="lesson-group">
@@ -1978,7 +1983,7 @@ function renderC33Schedule(){
    return {...lesson,visibleDetails:details};
   }).filter(lesson=>lesson.visibleDetails.length);
   return '<article class="c33-day"><h2>'+day.day+'</h2>'+
-   lessons.map(lesson=>{const todayParts=permNowParts();const todayName=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].indexOf(todayParts.weekday);const isToday=day.day===["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"][todayName];const replacement=isToday?replacementFor("C33",lesson.pair):null;return '<div class="c33-lesson '+(replacement?'is-replaced':'')+'"><div class="c33-pair">'+lesson.pair+'</div><div class="c33-info">'+(replacement?'<span class="replacement-tag">↻ ЗАМЕНА</span>':'')+'<div class="c33-subject">'+(replacement?.subject||lesson.subject)+'</div>'+
+   lessons.map(lesson=>{const todayParts=permNowParts();const todayName=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].indexOf(todayParts.weekday);const isToday=day.day===["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"][todayName];const candidate=isToday?replacementFor("C33",lesson.pair):null;const replacement=candidate&&((candidate.subject&&candidate.subject!==lesson.subject)||(candidate.teacher&&lesson.visibleDetails.some(d=>candidate.teacher!==d[1]))||(candidate.room&&lesson.visibleDetails.some(d=>candidate.room!==d[2])))?candidate:null;return '<div class="c33-lesson '+(replacement?'is-replaced':'')+'"><div class="c33-pair">'+lesson.pair+'</div><div class="c33-info">'+(replacement?'<span class="replacement-tag">↻ ЗАМЕНА</span>':'')+'<div class="c33-subject">'+(replacement?.subject||lesson.subject)+'</div>'+
    lesson.visibleDetails.map(d=>'<div class="c33-detail"><span class="c33-week">'+d[0]+'</span><strong>'+(replacement?.teacher||d[1])+'</strong>'+(replacement?.room?' · каб. '+replacement.room:(d[2]?' · каб. '+d[2]:''))+'</div>').join('')+
    '</div></div>';}).join('')+'</article>';
  }).join('');
