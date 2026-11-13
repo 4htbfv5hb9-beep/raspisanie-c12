@@ -308,6 +308,42 @@ def format_replacements(text: str) -> str:
     return pattern.sub(lambda match: replacements[match.group(0).lower()], text)
 
 
+RU_MONTHS = {"января":1,"февраля":2,"марта":3,"апреля":4,"мая":5,"июня":6,"июля":7,"августа":8,"сентября":9,"октября":10,"ноября":11,"декабря":12}
+
+def parse_replacement_feed(text: str, group: str) -> dict:
+    lines = [re.sub(r"\s+", " ", x).strip() for x in text.splitlines() if x.strip()]
+    date_match = next((m for x in lines if (m := re.search(r"(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)", x.lower()))), None)
+    if not date_match:
+        raise ValueError("Не удалось определить дату замен")
+    year = datetime.now(timezone(timedelta(hours=5))).year
+    source_date = date(year, RU_MONTHS[date_match.group(2)], int(date_match.group(1))).isoformat()
+    entries, active_group, found_group = [], None, False
+    for line in lines:
+        if "|" not in line:
+            continue
+        cells = [re.sub(r"\s+", " ", x).strip() for x in line.split("|")]
+        cells += [""] * (5 - len(cells))
+        group_cell, pair_cell, subject_cell, teacher_cell, room_cell = cells[:5]
+        if group_cell:
+            active_group = group_cell.upper().replace(" ", "")
+        if active_group != group.upper():
+            continue
+        found_group = True
+        pairs = [int(x) for x in re.findall(r"\d+", pair_cell)]
+        subject = subject_cell if subject_cell and subject_cell.lower() not in ("нет", "—", "-") else None
+        teacher = teacher_cell if teacher_cell and teacher_cell.lower() not in ("нет", "—", "-") else None
+        room = room_cell if room_cell and room_cell.lower() not in ("нет", "—", "-") else None
+        if not any((subject, teacher, room)):
+            continue
+        for pair in pairs:
+            if 1 <= pair <= 12:
+                entries.append({"date": source_date, "group": group, "pair": pair,
+                                "subject": subject, "teacher": teacher, "room": room})
+    if not found_group:
+        return {"date": source_date, "group": group, "entries": []}
+    return {"date": source_date, "group": group, "entries": entries}
+
+
 def check_replacements(state: dict) -> None:
     checks = [
         ("С-12", "snapshot", REPLACEMENTS_URL, "C12"),
@@ -316,15 +352,18 @@ def check_replacements(state: dict) -> None:
     for group, snapshot_key, source_url, group_code in checks:
         try:
             current = format_replacements(fetch_group_replacements(group))
+            parsed = parse_replacement_feed(current, group)
+            sync_key = "replacements_" + group_code.lower()
+            if WORKER_URL and state.get(sync_key) != parsed:
+                worker_post("/internal/sync-replacements", parsed)
+                state[sync_key] = parsed
+                logger.info("Синхронизированы замены %s: %d", group, len(parsed["entries"]))
             previous = state.get(snapshot_key)
             if previous is None:
                 state[snapshot_key] = current
                 logger.info("Сохранён начальный снимок замен %s; старые изменения не рассылаются", group)
             elif previous != current:
-                message = (
-                    f"📢 Изменения в заменах группы {group}!\n\n"
-                    f"{current}\n\nИсточник: {source_url}"
-                )
+                message = f"📢 Изменения в заменах группы {group}!\n\n{current}\n\nИсточник: {source_url}"
                 notify_subscribers(message, state, group_code)
                 state[snapshot_key] = current
                 logger.info("Обнаружено изменение %s; уведомления отправлены", group)
