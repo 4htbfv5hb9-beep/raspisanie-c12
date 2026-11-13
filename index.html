@@ -833,7 +833,7 @@ footer span {
 .games-feature{border-color:rgba(255,66,79,.38);background:linear-gradient(110deg,rgba(255,66,79,.2),transparent 70%),var(--panel)}
 .new-feature{background:linear-gradient(110deg,rgba(255,255,255,.06),transparent 70%),var(--panel)}
 .group-list-view{padding-top:8vh}
-.group-list-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+.group-list-options{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:560px){.home-screen{padding-top:8vh}.home-feature{min-height:100px;padding:17px}.home-feature-icon{width:52px;height:52px;flex-basis:52px}.home-feature-main strong{font-size:16px}.home-feature-main small{font-size:11px}.group-list-options{grid-template-columns:1fr}.group-list-options .group-option{min-height:145px}}
 
 .group-hidden{display:none!important}
@@ -960,6 +960,11 @@ footer span {
       <span class="group-desc">Расписание учебной группы</span>
       <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
     </button>
+    <button class="group-option coming" type="button" onclick="openGroupC22()">
+      <span class="group-name">С-22</span>
+      <span class="group-desc">Расписание учебной группы</span>
+      <span class="group-status">СКОРО</span>
+    </button>
   </div>
   <div class="footnote">РАСПИСАНИЕ · 2026—2027</div>
 </section>
@@ -968,6 +973,12 @@ footer span {
   <div style="font-size:48px">✦</div>
   <h2>СКОРО</h2>
   <p>Расписание группы С-33 скоро появится здесь.</p>
+</section>
+<section class="soon-view group-hidden" id="c22SoonView">
+  <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
+  <div style="font-size:48px">✦</div>
+  <h2>С-22 · СКОРО</h2>
+  <p>Расписание группы С-22 скоро появится здесь.</p>
 </section>
 <section class="new-group-view group-hidden" id="newGroupView">
   <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
@@ -1975,6 +1986,7 @@ function backToHome(){
  window.scrollTo(0,0);
 }
 function openGroupC33(){
+ document.getElementById("c22SoonView").classList.add("group-hidden");
  c33CurrentWeek=currentWeek;
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("groupListView").classList.add("group-hidden");
@@ -1985,6 +1997,7 @@ function openGroupC33(){
 }
 
 function openGroupC12(){
+ document.getElementById("c22SoonView").classList.add("group-hidden");
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("soonView").classList.add("group-hidden");
@@ -2004,6 +2017,12 @@ function showComingSoon(){
  document.getElementById("soonView").classList.remove("group-hidden");
  window.scrollTo(0,0);
 }
+function openGroupC22(){
+ document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("groupListView").classList.add("group-hidden");
+ document.getElementById("c22SoonView").classList.remove("group-hidden");
+ window.scrollTo(0,0);
+}
 const c33Students = ["Буренкова София Владимировна","Валиева Камилла Азаматовна","Ежова Анастасия Юрьевна","Искужин Тимур Ринатович","Куцык Артём Александрович","Миронова Анастасия Андреевна","Пономарев Кирилл Константинович","Сарваров Раиль Ринатович","Сираев Амир Раилевич","Суфиянов Айрат Русланович","Туктагулов Рифат Маратович","Хасанова Азалия Раилевна","Шарифуллина Алина Рустемовна","Эрсез Тимур Мустафович","Варанкина Мирра Глебовна","Вильданова Риана Рустамовна","Гарипов Артур Азатович","Давлетшин Галиаскар Динисламович","Дударев Никита Григорьевич","Еникеев Даниил Дмитриевич","Закиров Артем Тимурович","Идрисов Альберт Артурович","Котенко Назар Максимович","Максютов Тимур Рафисович","Прокопьева Валерия Евгеньевна","Рафиков Тимур Альбертович","Талипов Алмаз Ринатович","Шарафеев Ринат Рифатович"];
 function toggleC33Roster(){
  const panel=document.getElementById("c33RosterPanel"),button=document.getElementById("c33RosterBtn");
@@ -2018,6 +2037,7 @@ function renderC33Roster(){
 }
 
 function backToGroups(){
+ document.getElementById("c22SoonView").classList.add("group-hidden");
  document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("c12App").classList.add("group-hidden");
  document.getElementById("c33App").classList.add("group-hidden");
