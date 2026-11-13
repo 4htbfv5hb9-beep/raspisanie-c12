@@ -256,6 +256,23 @@ export default {
           await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers));
           return json({ ok: true, count: subscribers.length }, 200, origin);
         }
+        if (url.pathname === "/internal/sync-replacements") {
+          const body = await request.json();
+          if (!["С-12", "С-33"].includes(body.group) ||
+              typeof body.date !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(body.date) ||
+              !Array.isArray(body.entries) || body.entries.length > 100) {
+            return json({ ok: false, error: "Invalid replacements payload" }, 400, origin);
+          }
+          const entries = body.entries.filter(item =>
+            item && item.date === body.date && item.group === body.group &&
+            Number.isInteger(item.pair) && item.pair >= 1 && item.pair <= 12 &&
+            ["subject", "teacher", "room"].every(key => item[key] == null || (typeof item[key] === "string" && item[key].length <= 120))
+          );
+          const key = body.group === "С-33" ? "c33:replacements" : "c12:replacements";
+          const saved = { date: body.date, group: body.group, entries, updatedAt: new Date().toISOString() };
+          await env.C12_DATA.put(key, JSON.stringify(saved));
+          return json({ ok: true, count: entries.length, updatedAt: saved.updatedAt }, 200, origin);
+        }
         if (url.pathname === "/internal/notify") {
           const body = await request.json();
           if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 4000) {
@@ -397,6 +414,14 @@ export default {
         return json({ ok: true, student: profile, group: selectedGroup, added: points, total: data.scores[scoreKey] }, 200, origin);
       }
       return json({ error: "Unknown action" }, 400, origin);
+    }
+
+    if (url.pathname === "/replacements" && request.method === "GET") {
+      const [c12, c33] = await Promise.all([
+        env.C12_DATA.get("c12:replacements", "json"),
+        env.C12_DATA.get("c33:replacements", "json")
+      ]);
+      return json({ ok: true, groups: { C12: c12, C33: c33 } }, 200, origin);
     }
 
     if (request.method === "GET") {
