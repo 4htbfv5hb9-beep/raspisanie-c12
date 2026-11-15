@@ -420,30 +420,20 @@ def check_replacements(state: dict) -> None:
             logger.exception("Не удалось проверить страницу замен %s; следующая попытка будет позже", group)
     # One-time broadcast to C-12 subscribers about the confirmed Monday changes.
     broadcast_key = "broadcast_c12_2026_11_16_replacements"
-    if c12_check_succeeded and not state.get(broadcast_key):
+    correction_key = "broadcast_c12_2026_11_16_correction"
+    if c12_check_succeeded and not state.get(correction_key):
         message = (
-            "📢 Важное уведомление для группы С-12!\n\n"
-            "На понедельник, 16 ноября (красная неделя), есть замены:\n"
-            "1-я пара — Русский язык: ЗАМЕНА, кабинет НЕТ.\n"
-            "2-я пара — Математика: ЗАМЕНА, кабинет НЕТ.\n"
-            "3-я пара — География по расписанию, без изменений.\n\n"
-            "Откройте расписание в мини-приложении бота."
+            "📢 Обновление расписания С-12 на понедельник, 16 ноября (красная неделя)!\\n\\n"
+            "1-я пара — Русский язык: ЗАМЕНА, кабинет НЕТ.\\n"
+            "2-я пара — Математика: ЗАМЕНА, кабинет НЕТ.\\n"
+            "3-я пара — География: кабинет 29.\\n"
+            "4-я пара — Русский язык, преподаватель Ионова: кабинет 34.\\n\\n"
+            "Проверьте расписание в мини-приложении бота."
         )
         notify_subscribers(message, state, "C12")
         state[broadcast_key] = True
-        logger.info("Однократное уведомление о заменах 16 ноября отправлено подписчикам С-12")
-    correction_key = "broadcast_c12_2026_11_16_correction"
-    if c12_check_succeeded and not state.get(correction_key):
-        correction_message = (
-            "📢 Уточнение по заменам С-12 на понедельник, 16 ноября!\n\n"
-            "Исправление: Русский язык — замена, кабинет 34.\n"
-            "Математика — замена, кабинет НЕТ.\n"
-            "География — без замены, по обычному расписанию.\n\n"
-            "Проверьте обновлённое расписание в мини-приложении."
-        )
-        notify_subscribers(correction_message, state, "C12")
         state[correction_key] = True
-        logger.info("Уведомление об уточнении замен 16 ноября отправлено подписчикам С-12")
+        logger.info("Обновлённое уведомление о расписании 16 ноября отправлено подписчикам С-12")
     state["last_check"] = int(time.time())
 
 def main() -> None:
