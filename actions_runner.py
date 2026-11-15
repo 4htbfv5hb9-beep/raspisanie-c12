@@ -432,6 +432,18 @@ def check_replacements(state: dict) -> None:
         notify_subscribers(message, state, "C12")
         state[broadcast_key] = True
         logger.info("Однократное уведомление о заменах 16 ноября отправлено подписчикам С-12")
+    correction_key = "broadcast_c12_2026_11_16_correction"
+    if c12_check_succeeded and not state.get(correction_key):
+        correction_message = (
+            "📢 Уточнение по заменам С-12 на понедельник, 16 ноября!\n\n"
+            "Исправление: Русский язык — замена, кабинет 34.\n"
+            "Математика — замена, кабинет НЕТ.\n"
+            "География — без замены, по обычному расписанию.\n\n"
+            "Проверьте обновлённое расписание в мини-приложении."
+        )
+        notify_subscribers(correction_message, state, "C12")
+        state[correction_key] = True
+        logger.info("Уведомление об уточнении замен 16 ноября отправлено подписчикам С-12")
     state["last_check"] = int(time.time())
 
 def main() -> None:
