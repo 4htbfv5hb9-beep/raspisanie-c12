@@ -1401,32 +1401,41 @@ function renderCalendarDetail() {
     const day = dayIndex < 6 ? weekData[dayIndex] : null;
     const lessons = groupedCalendarLessons(day);
     const pairTimes = ["08:30–10:00", "10:10–11:40", "12:30–13:50", "14:10–15:30"];
+    const replacementData = liveReplacements.C12;
+    const dayReplacements = replacementData && replacementData.date === selectedCalendarDate
+        ? (replacementData.entries || []) : [];
+    const pairCount = Math.max(lessons.length, ...dayReplacements.map(x => Number(x.pair) || 0), 0);
     let body = "";
-    if (!lessons.length) {
+    if (!pairCount) {
         body = '<div class="calendar-empty">' + (dayIndex === 6 ? "Воскресенье — выходной 🌿" : "На этот день занятий нет.") + '</div>';
     } else {
-        body = lessons.map((lesson, index) => {
-            const time = pairTimes[index] || "Время уточняется";
-            const isSelectedToday = selectedCalendarDate === yekaTodayKey();
-            const candidate = isSelectedToday ? replacementFor("C12", index + 1) : null;
+        const rows = [];
+        for (let index = 0; index < pairCount; index++) {
+            const lesson = lessons[index];
+            const candidate = dayReplacements.find(x => Number(x.pair) === index + 1);
             const replacement = candidate && (
-                (candidate.subject && candidate.subject !== lesson.subject) ||
-                (candidate.teacher && lesson.groups.some(g => !g.startsWith(candidate.teacher + " ·"))) ||
-                (candidate.room && lesson.groups.some(g => !g.endsWith("каб. " + candidate.room)))
+                candidate.cancelled ||
+                (candidate.subject && (!lesson || candidate.subject !== lesson.subject)) ||
+                (candidate.teacher && (!lesson || lesson.groups.some(g => !g.startsWith(candidate.teacher + " ·")))) ||
+                (candidate.room && (!lesson || lesson.groups.some(g => !g.endsWith("каб. " + candidate.room))))
             ) ? candidate : null;
-            const displaySubject = replacement?.subject || lesson.subject;
-            const displayGroups = replacement
-                ? [(replacement.teacher || lesson.groups[0].split(" · каб. ")[0]) +
-                   (replacement.room ? " · каб. " + replacement.room :
-                    (lesson.groups[0].includes(" · каб. ") ? " · каб. " + lesson.groups[0].split(" · каб. ")[1] : ""))]
-                : lesson.groups;
-            return '<div class="calendar-lesson"><div>' +
-                (replacement ? '<span class="replacement-tag">↻ ЗАМЕНА</span>' : '') +
-                '<div class="calendar-lesson-name">' + (index + 1) + '. ' + displaySubject +
-                '</div><div class="calendar-lesson-meta">' + displayGroups.join(" / ") +
+            if (!lesson && !replacement) continue;
+            const time = pairTimes[index] || "Время уточняется";
+            const subject = replacement?.subject || lesson?.subject || "Занятие";
+            const meta = replacement?.cancelled
+                ? "Пара отменена · занятий нет"
+                : replacement
+                    ? (replacement.teacher || (lesson?.groups[0] || "").split(" · каб. ")[0]) +
+                      (replacement.room ? " · каб. " + replacement.room : "")
+                    : (lesson?.groups || []).join(" / ");
+            rows.push('<div class="calendar-lesson">' +
+                '<div>' + (replacement ? '<span class="replacement-tag">↻ ЗАМЕНА</span>' : '') +
+                '<div class="calendar-lesson-name">' + (index + 1) + '. ' + subject +
+                '</div><div class="calendar-lesson-meta">' + meta +
                 '</div></div><div class="calendar-lesson-time">' + time +
-                '</div></div>';
-        }).join("");
+                '</div></div>');
+        }
+        body = rows.join("");
     }
     detail.innerHTML = '<div class="calendar-detail-head"><div class="calendar-detail-title">' +
         dateLabel + '</div><div class="calendar-week-tag">' + weekLabel +
@@ -1673,7 +1682,7 @@ function renderRoster() {
 const REPLACEMENTS_API="https://c12-schedule-api.4htbfv5hb9.workers.dev/replacements";
 let liveReplacements={C12:null,C33:null};
 function yekaTodayKey(){const p=permNowParts();return p.year+"-"+p.month+"-"+p.day;}
-function replacementFor(group,pair){const data=liveReplacements[group];if(!data||data.date!==yekaTodayKey())return null;return (data.entries||[]).find(x=>Number(x.pair)===Number(pair))||null;}
+function replacementFor(group,pair,dateKey){const data=liveReplacements[group];const targetDate=dateKey||yekaTodayKey();if(!data||data.date!==targetDate)return null;return (data.entries||[]).find(x=>Number(x.pair)===Number(pair))||null;}
 async function refreshLiveReplacements(){try{const response=await fetch(REPLACEMENTS_API,{cache:"no-store"});if(!response.ok)return;const data=await response.json();if(!data.ok)return;liveReplacements=data.groups||liveReplacements;renderSchedule();renderCalendarDetail();renderC33Schedule();}catch(error){console.warn("Не удалось обновить замены",error);}}
 
 function renderSchedule() {
