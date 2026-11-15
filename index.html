@@ -1407,8 +1407,10 @@ function renderCalendarDetail() {
     // Подтверждённые вручную изменения на конкретную дату; данные сервера имеют приоритет.
     const manualReplacements = {
         "2026-11-16": [
-            { pair: 1, subject: "Русский язык", room: "34" },
-            { pair: 2, subject: "Математика", room: "НЕТ" }
+            { pair: 1, subject: "Русский язык", room: "НЕТ" },
+            { pair: 2, subject: "Математика", room: "НЕТ" },
+            { pair: 3, subject: "География", room: "29" },
+            { pair: 4, subject: "Русский язык", teacher: "Ионова", room: "34" }
         ]
     };
     const manualDayReplacements = manualReplacements[selectedCalendarDate] || [];
