@@ -1407,13 +1407,15 @@ function renderCalendarDetail() {
     // Подтверждённые вручную изменения на конкретную дату; данные сервера имеют приоритет.
     const manualReplacements = {
         "2026-11-16": [
-            { pair: 1, subject: "Русский язык", room: "НЕТ" },
+            { pair: 1, subject: "Русский язык", room: "34" },
             { pair: 2, subject: "Математика", room: "НЕТ" }
         ]
     };
-    const dayReplacements = liveDayReplacements.length
-        ? liveDayReplacements
-        : (manualReplacements[selectedCalendarDate] || []);
+    const manualDayReplacements = manualReplacements[selectedCalendarDate] || [];
+    const dayReplacements = [
+        ...liveDayReplacements.filter(x => !manualDayReplacements.some(m => Number(m.pair) === Number(x.pair))),
+        ...manualDayReplacements
+    ];
     const pairCount = Math.max(lessons.length, ...dayReplacements.map(x => Number(x.pair) || 0), 0);
     let body = "";
     if (!pairCount) {
