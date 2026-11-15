@@ -341,13 +341,17 @@ RU_MONTHS = {"января":1,"февраля":2,"марта":3,"апреля":4
 
 def parse_replacement_feed(text: str, group: str) -> dict:
     lines = [re.sub(r"\s+", " ", x).strip() for x in text.splitlines() if x.strip()]
-    date_match = next((m for x in lines if (m := re.search(r"(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)", x.lower()))), None)
-    if not date_match:
+    dated_lines = [(i, m) for i, x in enumerate(lines)
+                   if (m := re.search(r"(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)", x.lower()))]
+    if not dated_lines:
         raise ValueError("Не удалось определить дату замен")
+    # The page can contain several dated lists (for example Saturday and Monday).
+    # Use the last published section and ignore older rows above its heading.
+    section_start, date_match = dated_lines[-1]
     year = datetime.now(timezone(timedelta(hours=5))).year
     source_date = date(year, RU_MONTHS[date_match.group(2)], int(date_match.group(1))).isoformat()
     entries, active_group, found_group = [], None, False
-    for line in lines:
+    for line in lines[section_start:]:
         if "|" not in line:
             continue
         cells = [re.sub(r"\s+", " ", x).strip() for x in line.split("|")]
