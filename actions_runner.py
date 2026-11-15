@@ -368,7 +368,7 @@ def parse_replacement_feed(text: str, group: str) -> dict:
         subject = subject_cell if subject_cell and subject_cell.lower() not in ("—", "-") else None
         teacher = teacher_cell if teacher_cell and teacher_cell.lower() not in ("нет", "—", "-") else None
         room = room_cell.upper() if room_cell and room_cell.lower() not in ("—", "-") else None
-        cancelled = not any((subject, teacher, room))
+        cancelled = not subject and not teacher and room == "НЕТ"
         for pair in pairs:
             if 1 <= pair <= 12:
                 entries.append({"date": source_date, "group": group, "pair": pair,
