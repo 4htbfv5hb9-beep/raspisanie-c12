@@ -364,12 +364,12 @@ def parse_replacement_feed(text: str, group: str) -> dict:
         subject = subject_cell if subject_cell and subject_cell.lower() not in ("—", "-") else None
         teacher = teacher_cell if teacher_cell and teacher_cell.lower() not in ("нет", "—", "-") else None
         room = room_cell.upper() if room_cell and room_cell.lower() not in ("—", "-") else None
-        if not any((subject, teacher, room)):
-            continue
+        cancelled = not any((subject, teacher, room))
         for pair in pairs:
             if 1 <= pair <= 12:
                 entries.append({"date": source_date, "group": group, "pair": pair,
-                                "subject": subject, "teacher": teacher, "room": room})
+                                "subject": subject, "teacher": teacher, "room": room,
+                                "cancelled": cancelled})
     if not found_group:
         # С-33 is sometimes listed only as a practice period, with no replacement rows.
         # Treat that explicit source state as an empty list; otherwise fail closed so a
