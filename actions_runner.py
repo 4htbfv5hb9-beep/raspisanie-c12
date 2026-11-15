@@ -393,6 +393,7 @@ def check_replacements(state: dict) -> None:
         ("С-12", "snapshot", REPLACEMENTS_URL, "C12"),
         ("С-33", "snapshot_c33", REPLACEMENTS_URL_C33, "C33"),
     ]
+    c12_check_succeeded = False
     for group, snapshot_key, source_url, group_code in checks:
         try:
             current = format_replacements(fetch_group_replacements(group))
@@ -413,8 +414,24 @@ def check_replacements(state: dict) -> None:
                 logger.info("Обнаружено изменение %s; уведомления отправлены", group)
             else:
                 logger.info("Изменений в заменах %s нет", group)
+            if group_code == "C12":
+                c12_check_succeeded = True
         except Exception:
             logger.exception("Не удалось проверить страницу замен %s; следующая попытка будет позже", group)
+    # One-time broadcast to C-12 subscribers about the confirmed Monday changes.
+    broadcast_key = "broadcast_c12_2026_11_16_replacements"
+    if c12_check_succeeded and not state.get(broadcast_key):
+        message = (
+            "📢 Важное уведомление для группы С-12!\n\n"
+            "На понедельник, 16 ноября (красная неделя), есть замены:\n"
+            "1-я пара — Русский язык: ЗАМЕНА, кабинет НЕТ.\n"
+            "2-я пара — Математика: ЗАМЕНА, кабинет НЕТ.\n"
+            "3-я пара — География по расписанию, без изменений.\n\n"
+            "Откройте расписание в мини-приложении бота."
+        )
+        notify_subscribers(message, state, "C12")
+        state[broadcast_key] = True
+        logger.info("Однократное уведомление о заменах 16 ноября отправлено подписчикам С-12")
     state["last_check"] = int(time.time())
 
 def main() -> None:
