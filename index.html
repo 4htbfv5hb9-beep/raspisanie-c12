@@ -967,6 +967,11 @@ footer span {
       <span class="group-desc">Расписание учебной группы</span>
       <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
     </button>
+    <button class="group-option coming" type="button" onclick="openGroupC13()">
+      <span class="group-name">С-13</span>
+      <span class="group-desc">Расписание учебной группы</span>
+      <span class="group-status">СКОРО</span>
+    </button>
     <button class="group-option coming" type="button" onclick="openGroupC22()">
       <span class="group-name">С-22</span>
       <span class="group-desc">Расписание учебной группы</span>
@@ -986,6 +991,13 @@ footer span {
   <div style="font-size:48px">✦</div>
   <h2>С-22 · СКОРО</h2>
   <p>Расписание группы С-22 скоро появится здесь.</p>
+</section>
+<section class="soon-view group-hidden" id="c13SoonView">
+  <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
+  <div style="font-size:48px">✦</div>
+  <h2>С-13 · СКОРО</h2>
+  <p>Расписание группы С-13 скоро появится в приложении.</p>
+  <p>Мы уже готовим раздел. Загляни сюда позже — о запуске сообщим отдельно.</p>
 </section>
 <section class="new-group-view group-hidden" id="newGroupView">
   <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
@@ -2068,6 +2080,17 @@ function showComingSoon(){
  document.getElementById("soonView").classList.remove("group-hidden");
  window.scrollTo(0,0);
 }
+function openGroupC13(){
+ document.getElementById("groupChooser").classList.add("group-hidden");
+ document.getElementById("groupListView").classList.add("group-hidden");
+ document.getElementById("c12App").classList.add("group-hidden");
+ document.getElementById("c33App").classList.add("group-hidden");
+ document.getElementById("soonView").classList.add("group-hidden");
+ document.getElementById("c22SoonView").classList.add("group-hidden");
+ document.getElementById("newGroupView").classList.add("group-hidden");
+ document.getElementById("c13SoonView").classList.remove("group-hidden");
+ window.scrollTo(0,0);
+}
 function openGroupC22(){
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("groupListView").classList.add("group-hidden");
@@ -2088,6 +2111,7 @@ function renderC33Roster(){
 }
 
 function backToGroups(){
+ document.getElementById("c13SoonView").classList.add("group-hidden");
  document.getElementById("c22SoonView").classList.add("group-hidden");
  document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("c12App").classList.add("group-hidden");
