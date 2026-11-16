@@ -168,11 +168,29 @@ function groupListMessage() {
 
 async function handleTelegramUpdate(update, env) {
   const message = update.message;
-  if (!message || !message.chat || message.chat.type !== "private" || !message.from) return;
+  if (!message || !message.chat || !message.from) return;
 
   const chatId = message.chat.id;
   const text = (message.text || "").trim();
   const command = text.split(/\s+/)[0].split("@")[0];
+
+  // Group chats subscribe explicitly with /start@BotUsername.
+  // Private chats keep the existing individual subscription flow.
+  if (message.chat.type !== "private") {
+    if (["group", "supergroup"].includes(message.chat.type) && command === "/start") {
+      const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
+      if (!subscribers.includes(chatId)) subscribers.push(chatId);
+      await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers));
+      await sendText(env, chatId,
+        "🔔 Этот чат подписан на уведомления о новых заменах группы С-12.\n" +
+        "Чтобы отключить рассылку, отправьте /stop@Raspisanie_C12_bot.");
+    } else if (["group", "supergroup"].includes(message.chat.type) && command === "/stop") {
+      const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
+      await env.C12_DATA.put(SUBSCRIBERS_KEY, JSON.stringify(subscribers.filter(id => id !== chatId)));
+      await sendText(env, chatId, "Уведомления о заменах С-12 для этого чата отключены.");
+    }
+    return;
+  }
 
   if (command === "/start") {
     const subscribers = await env.C12_DATA.get(SUBSCRIBERS_KEY, "json") || [];
