@@ -978,7 +978,27 @@ footer span {
       <span class="group-status">СКОРО</span>
     </button>
   </div>
+  <button class="home-feature new-feature" type="button" onclick="openOfficialTimetable()">
+    <span class="home-feature-icon">📄</span>
+    <span class="home-feature-main"><strong>Все 67 групп</strong><small>Официальное расписание первой и второй смены</small></span>
+    <span class="home-feature-arrow">→</span>
+  </button>
   <div class="footnote">РАСПИСАНИЕ · 2026—2027</div>
+</section>
+<section class="soon-view group-hidden" id="officialTimetableView" style="width:min(1100px,94%);padding:25px 0 45px;text-align:left">
+  <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
+  <div class="brand" style="color:#ff858d;font-size:10px;font-weight:800;letter-spacing:2px">ОФИЦИАЛЬНОЕ РАСПИСАНИЕ</div>
+  <h2 style="font-size:clamp(28px,6vw,40px);margin:8px 0 10px">Все учебные группы</h2>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:18px">Выбери группу — откроется PDF той смены, в которой она учится.</p>
+  <select id="officialGroupSelect" onchange="changeOfficialGroup()" style="width:100%;padding:14px;border-radius:12px;background:var(--panel);color:var(--text);border:1px solid var(--border);font:inherit;margin-bottom:12px"></select>
+  <div id="officialGroupInfo" style="color:var(--muted);font-size:12px;margin:0 0 12px"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <a id="officialPdfLink" class="replace-button" href="#" target="_blank" rel="noopener noreferrer">Открыть PDF ↗</a>
+  </div>
+  <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff">
+    <iframe id="officialPdfFrame" title="Официальное расписание групп" style="display:block;width:100%;height:72vh;min-height:480px;border:0" loading="lazy"></iframe>
+  </div>
+  <p style="color:var(--muted);font-size:11px;line-height:1.6;margin-top:12px">В официальной таблице красная и белая недели показаны вместе: ориентируйся на цвет текста и диагональное разделение ячеек. Здесь открыт исходный документ колледжа без изменений.</p>
 </section>
 <section class="soon-view group-hidden" id="soonView">
   <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
@@ -2038,6 +2058,24 @@ function renderC33Schedule(){
    '</div></div>';}).join('')+'</article>';
  }).join('');
 }
+const officialFirstGroups=["А-11","А-12","ВВ-11","ГД-11","ГД-12","ДЗ-11","ДЗ-12","ЗУ-11","ЗУ-12","ЛГ-11","МКД-11","ПО-11","ПО-12","С-11","С-12","С-13","СМ-11","ЭСТУ-11","С-21","С-22","С-23","СМ-21","ВВ-21","ГД-21","ГД-22","А-21","А-22","ЗУ-21","ЗУ-22","ЛГ-21","МКД-21","ЭСТУ-21"];
+const officialSecondGroups=["ПО-21","ПО-22","ДЗ-21","ДЗ-22","ВВ-31","ДЗ-31","ДЗ-32","А-31","А-32","СМ-31","ПО-31","ПО-32","ГД-31","ГД-32","С-31","С-32","С-33","ЗУ-31","ЗУ-32","ЛГ-31","ВВ-41","А-41","А-42","ЗУ-41","ЗУ-42","С-41","С-42","С-43","СМ-41","ПО-41","ПО-42","ДЗ-41","ДЗ-42","ГД-41","ГД-42"];
+const officialPdfFirst="https://bask-rb.ru/wp-content/uploads/2026/10/1-%D1%81%D0%BC%D0%B5%D0%BD%D0%B0.pdf";
+const officialPdfSecond="https://bask-rb.ru/wp-content/uploads/2026/10/2-%D1%81%D0%BC%D0%B5%D0%BD%D0%B0.pdf";
+function openOfficialTimetable(){
+ const select=document.getElementById("officialGroupSelect");
+ if(!select.options.length)select.innerHTML=[...officialFirstGroups.map(g=>'<option value="'+g+'">'+g+' · первая смена</option>'),...officialSecondGroups.map(g=>'<option value="'+g+'">'+g+' · вторая смена</option>')].join("");
+ document.getElementById("groupListView").classList.add("group-hidden");
+ document.getElementById("officialTimetableView").classList.remove("group-hidden");
+ changeOfficialGroup();window.scrollTo(0,0);
+}
+function changeOfficialGroup(){
+ const group=document.getElementById("officialGroupSelect").value;
+ const first=officialFirstGroups.includes(group),url=first?officialPdfFirst:officialPdfSecond;
+ document.getElementById("officialGroupInfo").textContent="Группа "+group+" · "+(first?"Первая смена":"Вторая смена")+" · "+(first?"32":"35")+" группы в документе";
+ document.getElementById("officialPdfLink").href=url;
+ document.getElementById("officialPdfFrame").src=url+"#view=FitH";
+}
 function openGroupList(){
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("groupListView").classList.remove("group-hidden");
@@ -2111,6 +2149,7 @@ function renderC33Roster(){
 }
 
 function backToGroups(){
+ document.getElementById("officialTimetableView").classList.add("group-hidden");
  document.getElementById("c13SoonView").classList.add("group-hidden");
  document.getElementById("c22SoonView").classList.add("group-hidden");
  document.getElementById("groupListView").classList.add("group-hidden");
