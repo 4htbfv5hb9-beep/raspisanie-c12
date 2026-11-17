@@ -2055,7 +2055,7 @@ function renderAllGroupCards(filter=""){
  const root=document.getElementById("allGroupCards");if(!root)return;
  const groups=[...officialFirstGroups.map(g=>({name:g,shift:1})),...officialSecondGroups.map(g=>({name:g,shift:2}))];
  const q=filter.trim().toLowerCase();
- root.innerHTML=groups.filter(x=>x.name.toLowerCase().includes(q)).map(x=>'<button class="group-option" type="button" onclick="openOfficialTimetable(\\''+x.name+'\\')"><span class="group-name">'+x.name+'</span><span class="group-desc">'+(x.shift===1?'Первая смена':'Вторая смена')+'</span><span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span></button>').join('');
+ root.innerHTML=groups.filter(x=>x.name.toLowerCase().includes(q)).map(x=>'<button class="group-option" type="button" data-group="'+x.name+'" onclick="openOfficialTimetable(this.dataset.group)"><span class="group-name">'+x.name+'</span><span class="group-desc">'+(x.shift===1?'Первая смена':'Вторая смена')+'</span><span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span></button>').join('');
 }
 function filterAllGroups(value){renderAllGroupCards(value)}
 function openOfficialTimetable(group){
