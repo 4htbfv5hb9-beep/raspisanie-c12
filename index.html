@@ -2109,10 +2109,11 @@ async function changeOfficialGroup(){
   const full=document.createElement("canvas");full.width=Math.ceil(viewport.width);full.height=Math.ceil(viewport.height);
   await page.render({canvasContext:full.getContext("2d"),viewport}).promise;
   const canvas=document.getElementById("officialColumnCanvas"),ctx=canvas.getContext("2d");
-  const pad=8,w=Math.max(1,Math.ceil(right-left));
-  canvas.width=w;canvas.height=full.height;
-  ctx.fillStyle="#fff";ctx.fillRect(0,0,w,full.height);
-  ctx.drawImage(full,Math.max(0,left),0,w,full.height,0,0,w,full.height);
+  const w=Math.max(1,Math.ceil(right-left)),zoom=5;
+  canvas.width=w*zoom;canvas.height=full.height*zoom;
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(full,Math.max(0,left),0,w,full.height,0,0,canvas.width,canvas.height);
   status.textContent="Группа "+group+" · расписание по дням и парам. Увеличивай изображение, если текст мелкий.";
  }catch(err){
   status.textContent="Предпросмотр колонки недоступен в этом браузере — ниже показан официальный PDF смены.";
