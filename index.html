@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#101014">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <title>Расписание С-12</title>
 
 <style>
@@ -985,20 +986,29 @@ footer span {
   </button>
   <div class="footnote">РАСПИСАНИЕ · 2026—2027</div>
 </section>
-<section class="soon-view group-hidden" id="officialTimetableView" style="width:min(1100px,94%);padding:25px 0 45px;text-align:left">
+<section class="group-hidden" id="officialTimetableView" style="width:min(1100px,94%);margin:0 auto;padding:24px 0 48px;text-align:left">
   <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
-  <div class="brand" style="color:#ff858d;font-size:10px;font-weight:800;letter-spacing:2px">ОФИЦИАЛЬНОЕ РАСПИСАНИЕ</div>
-  <h2 style="font-size:clamp(28px,6vw,40px);margin:8px 0 10px">Все учебные группы</h2>
-  <p style="color:var(--muted);font-size:13px;margin-bottom:18px">Выбери группу — откроется PDF той смены, в которой она учится.</p>
-  <select id="officialGroupSelect" onchange="changeOfficialGroup()" style="width:100%;padding:14px;border-radius:12px;background:var(--panel);color:var(--text);border:1px solid var(--border);font:inherit;margin-bottom:12px"></select>
-  <div id="officialGroupInfo" style="color:var(--muted);font-size:12px;margin:0 0 12px"></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-    <a id="officialPdfLink" class="replace-button" href="#" target="_blank" rel="noopener noreferrer">Открыть PDF ↗</a>
+  <div class="c33-hero" style="margin-bottom:18px">
+    <div class="c33-kicker">РАСПИСАНИЕ · 2026—2027</div>
+    <h1 id="officialGroupTitle" style="font-size:clamp(32px,7vw,48px);margin:8px 0">Группа</h1>
+    <p id="officialGroupInfo" style="color:var(--muted);font-size:13px">Индивидуальная колонка из официального расписания колледжа</p>
   </div>
-  <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff">
-    <iframe id="officialPdfFrame" title="Официальное расписание групп" style="display:block;width:100%;height:72vh;min-height:480px;border:0" loading="lazy"></iframe>
+  <div class="controls" style="margin-bottom:16px">
+    <select id="officialGroupSelect" onchange="changeOfficialGroup()" style="flex:1;min-width:220px;padding:14px;border-radius:13px;background:var(--panel);color:var(--text);border:1px solid var(--border);font:inherit"></select>
+    <a id="officialPdfLink" class="replace-button" href="#" target="_blank" rel="noopener noreferrer">Весь PDF ↗</a>
   </div>
-  <p style="color:var(--muted);font-size:11px;line-height:1.6;margin-top:12px">В официальной таблице красная и белая недели показаны вместе: ориентируйся на цвет текста и диагональное разделение ячеек. Здесь открыт исходный документ колледжа без изменений.</p>
+  <div class="calendar-panel" style="margin-bottom:16px">
+    <div class="section-heading" style="margin:0 0 12px"><h2>Твоё расписание</h2><span>ПО ДНЯМ И ПАРАМ</span></div>
+    <div id="officialColumnStatus" style="color:var(--muted);font-size:12px;margin-bottom:12px">Подготавливаем расписание…</div>
+    <div id="officialColumnWrap" style="overflow:auto;border-radius:12px;background:#fff;text-align:center;min-height:180px">
+      <canvas id="officialColumnCanvas" style="display:block;max-width:100%;height:auto;margin:0 auto"></canvas>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <span class="c33-week">КРАСНАЯ НЕДЕЛЯ — красный текст</span>
+      <span class="c33-week" style="background:rgba(255,255,255,.1);color:#d5d5dd">БЕЛАЯ НЕДЕЛЯ — чёрный текст</span>
+    </div>
+    <p class="c33-note">В ячейках с диагональю обе недели указаны вместе. Цветные подписи и диагональное разделение сохранены как в официальном документе колледжа.</p>
+  </div>
 </section>
 <section class="soon-view group-hidden" id="soonView">
   <button class="group-back" type="button" onclick="backToGroups()">← К ВЫБОРУ ГРУППЫ</button>
@@ -2062,6 +2072,7 @@ const officialFirstGroups=["А-11","А-12","ВВ-11","ГД-11","ГД-12","ДЗ-1
 const officialSecondGroups=["ПО-21","ПО-22","ДЗ-21","ДЗ-22","ВВ-31","ДЗ-31","ДЗ-32","А-31","А-32","СМ-31","ПО-31","ПО-32","ГД-31","ГД-32","С-31","С-32","С-33","ЗУ-31","ЗУ-32","ЛГ-31","ВВ-41","А-41","А-42","ЗУ-41","ЗУ-42","С-41","С-42","С-43","СМ-41","ПО-41","ПО-42","ДЗ-41","ДЗ-42","ГД-41","ГД-42"];
 const officialPdfFirst="https://bask-rb.ru/wp-content/uploads/2026/10/1-%D1%81%D0%BC%D0%B5%D0%BD%D0%B0.pdf";
 const officialPdfSecond="https://bask-rb.ru/wp-content/uploads/2026/10/2-%D1%81%D0%BC%D0%B5%D0%BD%D0%B0.pdf";
+let officialPdfCache={};
 function openOfficialTimetable(){
  const select=document.getElementById("officialGroupSelect");
  if(!select.options.length)select.innerHTML=[...officialFirstGroups.map(g=>'<option value="'+g+'">'+g+' · первая смена</option>'),...officialSecondGroups.map(g=>'<option value="'+g+'">'+g+' · вторая смена</option>')].join("");
@@ -2069,12 +2080,41 @@ function openOfficialTimetable(){
  document.getElementById("officialTimetableView").classList.remove("group-hidden");
  changeOfficialGroup();window.scrollTo(0,0);
 }
-function changeOfficialGroup(){
+async function changeOfficialGroup(){
  const group=document.getElementById("officialGroupSelect").value;
  const first=officialFirstGroups.includes(group),url=first?officialPdfFirst:officialPdfSecond;
- document.getElementById("officialGroupInfo").textContent="Группа "+group+" · "+(first?"Первая смена":"Вторая смена")+" · "+(first?"32":"35")+" группы в документе";
+ document.getElementById("officialGroupTitle").textContent=group;
+ document.getElementById("officialGroupInfo").textContent=(first?"Первая смена":"Вторая смена")+" · индивидуальная колонка из официальной таблицы";
  document.getElementById("officialPdfLink").href=url;
- document.getElementById("officialPdfFrame").src=url+"#view=FitH";
+ const status=document.getElementById("officialColumnStatus");
+ status.textContent="Загружаем расписание группы…";
+ try{
+  if(!window.pdfjsLib)throw new Error("PDF.js не загрузился");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  if(!officialPdfCache[url]){
+   const task=pdfjsLib.getDocument({url});
+   officialPdfCache[url]=await task.promise;
+  }
+  const pdf=officialPdfCache[url],page=await pdf.getPage(1),scale=1.35,viewport=page.getViewport({scale});
+  const text=await page.getTextContent();
+  const header=text.items.find(it=>it.str.trim()===group);
+  if(!header)throw new Error("Не удалось найти колонку группы в документе");
+  const xs=text.items.filter(it=>[...officialFirstGroups,...officialSecondGroups].includes(it.str.trim())).map(it=>it.transform[4]*scale).sort((a,b)=>a-b);
+  const x=header.transform[4]*scale,index=xs.findIndex(v=>Math.abs(v-x)<1);
+  const left=index<=0?0:(xs[index-1]+x)/2;
+  const right=index<0?viewport.width:(index===xs.length-1?viewport.width:(x+xs[index+1])/2);
+  const full=document.createElement("canvas");full.width=Math.ceil(viewport.width);full.height=Math.ceil(viewport.height);
+  await page.render({canvasContext:full.getContext("2d"),viewport}).promise;
+  const canvas=document.getElementById("officialColumnCanvas"),ctx=canvas.getContext("2d");
+  const pad=8,w=Math.max(1,Math.ceil(right-left));
+  canvas.width=w;canvas.height=full.height;
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,w,full.height);
+  ctx.drawImage(full,Math.max(0,left),0,w,full.height,0,0,w,full.height);
+  status.textContent="Группа "+group+" · расписание по дням и парам. Увеличивай изображение, если текст мелкий.";
+ }catch(err){
+  status.textContent="Не удалось автоматически выделить колонку. Открой полный официальный документ по кнопке выше.";
+  console.error(err);
+ }
 }
 function openGroupList(){
  document.getElementById("groupChooser").classList.add("group-hidden");
