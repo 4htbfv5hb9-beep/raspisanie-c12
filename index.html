@@ -912,6 +912,7 @@ footer span {
 .replacement-note{display:block;color:#ff8790;font-size:11px;font-weight:700;margin-top:4px}
 .c33-lesson.is-replaced{border:1px solid rgba(255,66,79,.55);background:linear-gradient(135deg,rgba(255,66,79,.13),rgba(201,31,54,.06))}
 
+.group-search-wrap{margin:0 0 16px}.group-search-wrap input{width:100%;padding:15px 17px;border:1px solid var(--border);border-radius:14px;background:var(--panel);color:var(--text);font:inherit;outline:none}.group-search-wrap input:focus{border-color:rgba(255,66,79,.65)}.group-list-options .group-option{min-height:150px;padding:20px}.group-list-options .group-name{font-size:30px}.group-list-options .group-status{margin-top:18px}@media(max-width:560px){.group-list-options{grid-template-columns:repeat(2,minmax(0,1fr))}.group-list-options .group-option{min-height:135px;padding:16px}.group-list-options .group-name{font-size:26px}.group-list-options .group-desc{font-size:10px}.group-list-options .group-status{font-size:8px;padding:6px 8px}}
 </style>
 </head>
 
@@ -957,33 +958,9 @@ footer span {
   <div class="brand">ВЫБОР ГРУППЫ</div>
   <h1>Выбери свою<br><span style="color:var(--red)">группу</span></h1>
   <p class="subtitle">Открой расписание своей группы</p>
-  <div class="group-options group-list-options">
-    <button class="group-option" type="button" onclick="openGroupC12()">
-      <span class="group-name">С-12</span>
-      <span class="group-desc">Расписание и сервисы группы</span>
-      <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
-    </button>
-    <button class="group-option" type="button" onclick="openGroupC33()">
-      <span class="group-name">С-33</span>
-      <span class="group-desc">Расписание учебной группы</span>
-      <span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span>
-    </button>
-    <button class="group-option coming" type="button" onclick="openGroupC13()">
-      <span class="group-name">С-13</span>
-      <span class="group-desc">Расписание учебной группы</span>
-      <span class="group-status">СКОРО</span>
-    </button>
-    <button class="group-option coming" type="button" onclick="openGroupC22()">
-      <span class="group-name">С-22</span>
-      <span class="group-desc">Расписание учебной группы</span>
-      <span class="group-status">СКОРО</span>
-    </button>
-  </div>
-  <button class="home-feature new-feature" type="button" onclick="openOfficialTimetable()">
-    <span class="home-feature-icon">📄</span>
-    <span class="home-feature-main"><strong>Все 67 групп</strong><small>Официальное расписание первой и второй смены</small></span>
-    <span class="home-feature-arrow">→</span>
-  </button>
+  <div class="group-search-wrap"><input id="allGroupSearch" type="search" placeholder="Найти группу, например С-12" oninput="filterAllGroups(this.value)" aria-label="Поиск группы"></div>
+  <div class="group-options group-list-options" id="allGroupCards"></div>
+  <div class="footnote">67 ГРУПП · 2 СМЕНЫ · 2026—2027</div>
   <div class="footnote">РАСПИСАНИЕ · 2026—2027</div>
 </section>
 <section class="group-hidden" id="officialTimetableView" style="width:min(1100px,94%);margin:0 auto;padding:24px 0 48px;text-align:left">
@@ -2074,11 +2051,19 @@ const officialSecondGroups=["ПО-21","ПО-22","ДЗ-21","ДЗ-22","ВВ-31","�
 const officialPdfFirst="https://bask-rb.ru/wp-content/uploads/2026/10/1-%D1%81%D0%BC%D0%B5%D0%BD%D0%B0.pdf";
 const officialPdfSecond="https://bask-rb.ru/wp-content/uploads/2026/10/2-%D1%81%D0%BC%D0%B5%D0%BD%D0%B0.pdf";
 let officialPdfCache={};
-function openOfficialTimetable(){
+function renderAllGroupCards(filter=""){
+ const root=document.getElementById("allGroupCards");if(!root)return;
+ const groups=[...officialFirstGroups.map(g=>({name:g,shift:1})),...officialSecondGroups.map(g=>({name:g,shift:2}))];
+ const q=filter.trim().toLowerCase();
+ root.innerHTML=groups.filter(x=>x.name.toLowerCase().includes(q)).map(x=>'<button class="group-option" type="button" onclick="openOfficialTimetable(\\''+x.name+'\\')"><span class="group-name">'+x.name+'</span><span class="group-desc">'+(x.shift===1?'Первая смена':'Вторая смена')+'</span><span class="group-status">ОТКРЫТЬ РАСПИСАНИЕ →</span></button>').join('');
+}
+function filterAllGroups(value){renderAllGroupCards(value)}
+function openOfficialTimetable(group){
  const select=document.getElementById("officialGroupSelect");
  if(!select.options.length)select.innerHTML=[...officialFirstGroups.map(g=>'<option value="'+g+'">'+g+' · первая смена</option>'),...officialSecondGroups.map(g=>'<option value="'+g+'">'+g+' · вторая смена</option>')].join("");
  document.getElementById("groupListView").classList.add("group-hidden");
  document.getElementById("officialTimetableView").classList.remove("group-hidden");
+ if(group)select.value=group;
  changeOfficialGroup();window.scrollTo(0,0);
 }
 async function changeOfficialGroup(){
@@ -2123,6 +2108,7 @@ async function changeOfficialGroup(){
  }
 }
 function openGroupList(){
+ renderAllGroupCards();
  document.getElementById("groupChooser").classList.add("group-hidden");
  document.getElementById("groupListView").classList.remove("group-hidden");
  window.scrollTo(0,0);
